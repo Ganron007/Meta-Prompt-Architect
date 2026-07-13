@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meta-Prompt Architect</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="aurora"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="logo-mark">◆</span>
+        <h1>Meta-Prompt Architect</h1>
+      </div>
+      <p class="tagline">Forge optimized prompts for Cursor, DeepSeek, Kimi, Claude, GPT &amp; more.</p>
+    </header>
+
+    <main>
+      <section class="card form-section">
+        <div class="card-glow"></div>
+        <h2 class="section-title">Configuration</h2>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="agent">Agent</label>
+            <div class="select-wrap">
+              <select id="agent">
+                <option value="cursor">Cursor</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="kimi">Kimi</option>
+                <option value="claude">Claude</option>
+                <option value="gpt">ChatGPT / GPT</option>
+                <option value="generic">Generic</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="domain">Domain</label>
+            <div class="select-wrap">
+              <select id="domain">
+                <option value="lab-build">Lab Builds &amp; Infrastructure</option>
+                <option value="code-review">Code Review &amp; Quality</option>
+                <option value="security">Security Review &amp; Hardening</option>
+                <option value="feature-exploration">Feature Exploration &amp; R&amp;D</option>
+                <option value="release-readiness">Release &amp; Public Readiness</option>
+                <option value="general">General</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="task">Task / Objective</label>
+          <textarea id="task" rows="3" placeholder="Describe what you need done..."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="context">Context <span class="optional">(optional)</span></label>
+          <textarea id="context" rows="3" placeholder="Relevant background, files, environment..."></textarea>
+        </div>
+
+        <div class="field">
+          <label for="constraints">Constraints <span class="optional">(optional)</span></label>
+          <textarea id="constraints" rows="2" placeholder="e.g., no hardcoded secrets, keep under 500 lines..."></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="outputFormat">Output Format</label>
+            <div class="select-wrap">
+              <select id="outputFormat">
+                <option value="markdown">Markdown</option>
+                <option value="json">JSON</option>
+                <option value="table">Markdown Table</option>
+                <option value="code">Code + Explanation</option>
+                <option value="diagram">Diagram / Flow</option>
+                <option value="text">Plain Text</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="tone">Tone</label>
+            <div class="select-wrap">
+              <select id="tone">
+                <option value="professional">Professional</option>
+                <option value="casual">Casual</option>
+                <option value="strict">Strict / Direct</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" id="includeExamples" />
+          <span class="slider"></span>
+          <span class="switch-label">Include examples</span>
+        </label>
+
+        <div class="actions">
+          <button id="generateBtn" class="btn-primary">
+            <span class="btn-icon">⚡</span> Generate Prompt
+          </button>
+        </div>
+      </section>
+
+      <section class="card output-section">
+        <div class="card-glow"></div>
+        <div class="output-header">
+          <h2 class="section-title">Generated Prompt</h2>
+          <div class="export-group">
+            <div class="select-wrap small">
+              <select id="exportFormat">
+                <option value="markdown">Markdown</option>
+                <option value="cursorrules">.cursorrules</option>
+                <option value="opencode">OpenCode JSON</option>
+                <option value="opencode-jsonc">OpenCode JSONC</option>
+                <option value="vscode">VS Code Snippet</option>
+                <option value="antigravity">Antigravity</option>
+              </select>
+            </div>
+            <button id="exportBtn" class="btn-ghost">Export</button>
+            <button id="copyBtn" class="btn-ghost">Copy</button>
+          </div>
+        </div>
+        <div class="output-wrap">
+          <pre id="output"><code>Click <strong>Generate Prompt</strong> to start.</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built with research from LangGPT, Prompt-Engineering-Guide, prompts.chat, and promptfoo.</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
