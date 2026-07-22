@@ -4,141 +4,247 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Meta-Prompt Architect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    try { if (localStorage.getItem('mpa-theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}
+  </script>
 </head>
 <body>
-  <div class="aurora"></div>
+  <div class="backdrop" aria-hidden="true">
+    <div class="glow glow-a"></div>
+    <div class="glow glow-b"></div>
+    <div class="grid-layer"></div>
+  </div>
 
-  <div class="container">
-    <header>
-      <div class="logo">
-        <span class="logo-mark">◆</span>
-        <h1>Meta-Prompt Architect</h1>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <div class="brand-text">
+          <h1>Meta-Prompt Architect</h1>
+          <span class="brand-sub">Prompt drafting console</span>
+        </div>
       </div>
-      <p class="tagline">Forge optimized prompts for Cursor, DeepSeek, Kimi, Claude, GPT &amp; more.</p>
+      <div class="topbar-right">
+        <span class="engine-tag" id="engineTag">TEMPLATE ENGINE</span>
+        <span class="status-led" id="statusLed"></span>
+        <span class="shortcut-hint"><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd><em>to forge</em></span>
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <span class="icon icon-sun" aria-hidden="true">&#9728;&#65038;</span>
+          <span class="icon icon-moon" aria-hidden="true">&#9790;</span>
+        </button>
+      </div>
     </header>
 
-    <main>
-      <section class="card form-section">
-        <div class="card-glow"></div>
-        <h2 class="section-title">Configuration</h2>
+    <main class="workbench">
+      <section class="pane pane-config" aria-label="Configuration">
+        <div class="pane-head">
+          <h2>Configuration</h2>
+          <span class="pane-index">01</span>
+        </div>
 
-        <div class="field-row">
-          <div class="field">
-            <label for="agent">Agent</label>
-            <div class="select-wrap">
-              <select id="agent">
-                <option value="cursor">Cursor</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="kimi">Kimi</option>
-                <option value="claude">Claude</option>
-                <option value="gpt">ChatGPT / GPT</option>
-                <option value="generic">Generic</option>
-              </select>
+        <div class="pane-body scroll">
+          <fieldset class="group">
+            <legend>The ask</legend>
+            <div class="field">
+              <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
+              <div class="select-wrap">
+                <select id="recipe">
+                  <option value="">None — freeform task</option>
+                </select>
+              </div>
+              <span class="recipe-tagline" id="recipeTagline"></span>
             </div>
-          </div>
-
-          <div class="field">
-            <label for="domain">Domain</label>
-            <div class="select-wrap">
-              <select id="domain">
-                <option value="lab-build">Lab Builds &amp; Infrastructure</option>
-                <option value="code-review">Code Review &amp; Quality</option>
-                <option value="security">Security Review &amp; Hardening</option>
-                <option value="feature-exploration">Feature Exploration &amp; R&amp;D</option>
-                <option value="release-readiness">Release &amp; Public Readiness</option>
-                <option value="general">General</option>
-              </select>
+            <div class="field">
+              <label for="task">Task / objective</label>
+              <textarea id="task" rows="6" placeholder="Full plan, rough idea, arrow lists — paste anything. Nothing gets dropped."></textarea>
             </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="task">Task / Objective</label>
-          <textarea id="task" rows="3" placeholder="Describe what you need done..."></textarea>
-        </div>
-
-        <div class="field">
-          <label for="context">Context <span class="optional">(optional)</span></label>
-          <textarea id="context" rows="3" placeholder="Relevant background, files, environment..."></textarea>
-        </div>
-
-        <div class="field">
-          <label for="constraints">Constraints <span class="optional">(optional)</span></label>
-          <textarea id="constraints" rows="2" placeholder="e.g., no hardcoded secrets, keep under 500 lines..."></textarea>
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label for="outputFormat">Output Format</label>
-            <div class="select-wrap">
-              <select id="outputFormat">
-                <option value="markdown">Markdown</option>
-                <option value="json">JSON</option>
-                <option value="table">Markdown Table</option>
-                <option value="code">Code + Explanation</option>
-                <option value="diagram">Diagram / Flow</option>
-                <option value="text">Plain Text</option>
-              </select>
+            <div class="field">
+              <label for="context">Context <span class="optional">optional</span></label>
+              <textarea id="context" rows="3" placeholder="Background, environment, files, paths..."></textarea>
             </div>
-          </div>
-
-          <div class="field">
-            <label for="tone">Tone</label>
-            <div class="select-wrap">
-              <select id="tone">
-                <option value="professional">Professional</option>
-                <option value="casual">Casual</option>
-                <option value="strict">Strict / Direct</option>
-              </select>
+            <div class="field">
+              <label for="constraints">Constraints <span class="optional">optional</span></label>
+              <textarea id="constraints" rows="2" placeholder="e.g. no hardcoded secrets, one-shot accuracy, keep under 500 lines..."></textarea>
             </div>
-          </div>
+          </fieldset>
+
+          <fieldset class="group">
+            <legend>Target</legend>
+            <div class="field-row">
+              <div class="field">
+                <label for="agent">Agent</label>
+                <div class="select-wrap">
+                  <select id="agent">
+                    <option value="cursor">Cursor</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="kimi">Kimi</option>
+                    <option value="claude">Claude</option>
+                    <option value="gpt">ChatGPT / GPT</option>
+                    <option value="windsurf">Windsurf</option>
+                    <option value="cline">Cline / Roo Code</option>
+                    <option value="opencode">OpenCode</option>
+                    <option value="generic">Generic</option>
+                  </select>
+                </div>
+                <div class="platform-chips" id="platformChips"></div>
+              </div>
+              <div class="field">
+                <label for="domain">Domain</label>
+                <div class="select-wrap">
+                  <select id="domain">
+                    <option value="lab-build">Lab Builds &amp; Infrastructure</option>
+                    <option value="code-review">Code Review &amp; Quality</option>
+                    <option value="security">Security Review &amp; Hardening</option>
+                    <option value="feature-exploration">Feature Exploration &amp; R&amp;D</option>
+                    <option value="release-readiness">Release &amp; Public Readiness</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="outputFormat">Output format</label>
+                <div class="select-wrap">
+                  <select id="outputFormat">
+                    <option value="markdown">Markdown</option>
+                    <option value="json">JSON</option>
+                    <option value="table">Markdown Table</option>
+                    <option value="code">Code + Explanation</option>
+                    <option value="diagram">Diagram / Flow</option>
+                    <option value="text">Plain Text</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="tone">Tone</label>
+                <div class="select-wrap">
+                  <select id="tone">
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="strict">Strict / Direct</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="includeExamples" />
+              <span class="slider"></span>
+              <span class="switch-label">Include examples in the prompt</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="group">
+            <legend>Engine</legend>
+            <label class="switch">
+              <input type="checkbox" id="consult" />
+              <span class="slider"></span>
+              <span class="switch-label">Consult mode <span class="switch-hint">LLM authors the full prompt, grounded in a project scan</span></span>
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="rewrite" />
+              <span class="slider"></span>
+              <span class="switch-label">Rewrite raw input <span class="switch-hint">polish rough wording before templating</span></span>
+            </label>
+
+            <div id="llmConfig" class="llm-config">
+              <div class="llm-inner">
+                <div class="field-row">
+                  <div class="field">
+                    <label for="provider">LLM provider</label>
+                    <div class="select-wrap">
+                      <select id="provider">
+                        <option value="">Pre-configured (.env)</option>
+                        <option value="mimo">MiMo (Xiaomi)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="anthropic">Anthropic</option>
+                        <option value="ollama">Ollama (local)</option>
+                        <option value="openai-compatible">OpenAI-compatible</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="model">Model</label>
+                    <input type="text" id="model" placeholder="e.g. gpt-4o-mini" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="apiKey">API key <span class="optional">not needed for Ollama</span></label>
+                  <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="apiBase">API base URL <span class="optional">optional</span></label>
+                  <input type="text" id="apiBase" placeholder="https://api.openai.com" />
+                </div>
+                <div class="field">
+                  <label for="project">Project path <span class="optional">consult grounding</span></label>
+                  <input type="text" id="project" placeholder="e.g. C:\my-project  (blank = server cwd)" />
+                </div>
+              </div>
+            </div>
+          </fieldset>
         </div>
 
-        <label class="switch">
-          <input type="checkbox" id="includeExamples" />
-          <span class="slider"></span>
-          <span class="switch-label">Include examples</span>
-        </label>
-
-        <div class="actions">
+        <div class="pane-foot pane-foot-actions">
           <button id="generateBtn" class="btn-primary">
-            <span class="btn-icon">⚡</span> Generate Prompt
+            <span class="btn-label">Forge prompt</span>
+            <span class="btn-kbd">Ctrl &#8629;</span>
           </button>
+          <button id="clearInputsBtn" class="btn-ghost" title="Clear task, context, and constraints">Clear</button>
         </div>
       </section>
 
-      <section class="card output-section">
-        <div class="card-glow"></div>
-        <div class="output-header">
-          <h2 class="section-title">Generated Prompt</h2>
-          <div class="export-group">
+      <section class="pane pane-output" aria-label="Generated prompt">
+        <div class="pane-head output-head">
+          <div class="output-title">
+            <h2>Forged prompt</h2>
+            <span class="pane-index">02</span>
+            <span class="output-meta" id="outputMeta">awaiting input</span>
+          </div>
+          <div class="toolbar">
             <div class="select-wrap small">
-              <select id="exportFormat">
+              <select id="exportFormat" aria-label="Export format">
                 <option value="markdown">Markdown</option>
                 <option value="cursorrules">.cursorrules</option>
+                <option value="clinerules">.clinerules</option>
+                <option value="agents-md">AGENTS.md</option>
+                <option value="windsurfrules">.windsurfrules</option>
                 <option value="opencode">OpenCode JSON</option>
                 <option value="opencode-jsonc">OpenCode JSONC</option>
                 <option value="vscode">VS Code Snippet</option>
+                <option value="custom-gpt">Custom GPT</option>
                 <option value="antigravity">Antigravity</option>
               </select>
             </div>
             <button id="exportBtn" class="btn-ghost">Export</button>
             <button id="copyBtn" class="btn-ghost">Copy</button>
+            <button id="shareBtn" class="btn-ghost" title="Copy shareable URL">Share</button>
+            <button id="clearOutputBtn" class="btn-ghost" title="Clear the generated prompt">Clear</button>
           </div>
         </div>
-        <div class="output-wrap">
-          <pre id="output"><code>Click <strong>Generate Prompt</strong> to start.</code></pre>
+
+        <div class="paper-wrap scroll">
+          <div class="paper" id="paper">
+            <div class="paper-rule" aria-hidden="true"></div>
+            <pre id="output" class="placeholder">Forge a prompt and it lands here —
+ready to copy straight into your agent.</pre>
+          </div>
+        </div>
+
+        <div class="pane-foot status-strip" aria-live="polite">
+          <span class="strip-dot" id="stripDot"></span>
+          <span id="statusStrip">Ready. Template engine runs offline; flip on Consult for LLM-authored prompts.</span>
         </div>
       </section>
     </main>
-
-    <footer>
-      <p>Built with research from LangGPT, Prompt-Engineering-Guide, prompts.chat, and promptfoo.</p>
-    </footer>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status"></div>
 
   <script src="app.js"></script>
 </body>

@@ -1,6 +1,9 @@
 const templates = require('./templates');
+const { enhanceWithLLM } = require('./enhancer');
+const { buildPlaybook } = require('./platforms');
+const { renderRecipe, getRecipe } = require('./recipes');
 
-function generate(config) {
+async function generate(config) {
   const {
     agent = 'generic',
     domain = 'general',
@@ -9,24 +12,54 @@ function generate(config) {
     constraints = '',
     outputFormat = 'markdown',
     tone = 'professional',
-    includeExamples = false
+    includeExamples = false,
+    rewrite = false,
+    recipe,
+    provider,
+    model,
+    apiKey,
+    apiBase
   } = config;
+
+  let enhancedTask = task;
+  let enhancedContext = context;
+  let enhancedConstraints = constraints;
+
+  if (rewrite) {
+    const llmConfig = { provider, model, apiKey, apiBase };
+    if (task) enhancedTask = await enhanceWithLLM(task, llmConfig);
+    if (context) enhancedContext = await enhanceWithLLM(context, llmConfig);
+    if (constraints) enhancedConstraints = await enhanceWithLLM(constraints, llmConfig);
+  }
+
+  const playbook = buildPlaybook(agent);
+
+  if (recipe && getRecipe(recipe)) {
+    const rendered = renderRecipe(recipe, {
+      task: enhancedTask,
+      context: enhancedContext,
+      constraints: enhancedConstraints
+    });
+    return `${rendered}\n\n${playbook}`.trim();
+  }
 
   const agentProfile = templates.agentProfiles[agent] || templates.agentProfiles.generic;
   const domainProfile = templates.domainProfiles[domain] || templates.domainProfiles.general;
 
-  const role = buildRole(agentProfile, domainProfile, task);
-  const objective = buildObjective(task, outputFormat, includeExamples);
+  const role = buildRole(agentProfile, domainProfile, enhancedTask);
+  const objective = buildObjective(enhancedTask, outputFormat, includeExamples);
   const outputSpec = buildOutputSpec(outputFormat);
-  const inputs = buildInputs(context, task);
-  const rules = buildRules(constraints, agentProfile, tone);
+  const inputs = buildInputs(enhancedContext, enhancedTask);
+  const rules = buildRules(enhancedConstraints, agentProfile, tone);
 
   const prompt = `# ${role}
 
 ## Context & Constraints
 ${domainProfile.context}
-${context ? '\n' + context : ''}
+${enhancedContext ? '\n' + enhancedContext : ''}
 ${rules}
+
+${playbook}
 
 ## Inputs
 ${inputs}

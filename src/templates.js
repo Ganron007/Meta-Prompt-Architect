@@ -44,6 +44,33 @@ const agentProfiles = {
       'Respect the provided system instructions above all.'
     ]
   },
+  windsurf: {
+    title: 'Windsurf Cascade Engineer',
+    rules: [
+      'Use Cascade agent mode for multi-step read-edit-run-fix flows.',
+      'Reference files with @file and the codebase with @codebase for grounded edits.',
+      'Run tests and linters in the integrated terminal after changes.',
+      'State conventions explicitly so they persist as Memories.'
+    ]
+  },
+  cline: {
+    title: 'Cline / Roo Code Agent',
+    rules: [
+      'Start in Plan/Architect mode, then switch to Act/Code mode for implementation.',
+      'Follow .clinerules or .roo/rules for project conventions.',
+      'Use the browser tool to visually verify UI changes.',
+      'Switch to Debug mode for root-cause analysis when something breaks.'
+    ]
+  },
+  opencode: {
+    title: 'OpenCode Terminal Agent',
+    rules: [
+      'Read AGENTS.md and opencode.json first for project conventions and permissions.',
+      'Use the explore sub-agent for codebase discovery before editing.',
+      'Check LSP diagnostics and run tests via Bash after every change.',
+      'Respect permission rules — stay within the configured allowlist.'
+    ]
+  },
   generic: {
     title: 'AI Operations Architect',
     rules: [

@@ -1,13 +1,13 @@
 {
   "name": "meta-prompt-architect",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A prompt generator and exporter for Cursor, OpenCode, VS Code, and other AI agents.",
   "main": "src/generator.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/meta-prompt-architect.git"
+    "url": "https://github.com/Ganro/Meta-Prompt-Architect.git"
   },
-  "homepage": "https://github.com/your-org/meta-prompt-architect#readme",
+  "homepage": "https://github.com/Ganro/Meta-Prompt-Architect#readme",
   "bin": {
     "prompt-architect": "./bin/prompt-architect"
   },
