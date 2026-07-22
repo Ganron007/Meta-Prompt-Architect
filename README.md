@@ -1,6 +1,6 @@
 # Meta-Prompt Architect
 
-A simple, extensible prompt generator for solo engineers running multi-faceted operations. Build optimized prompts tailored for Cursor, DeepSeek, Kimi, Claude, GPT, and generic agents, then export them to `.cursorrules`, OpenCode JSON/JSONC, VS Code snippets, or Antigravity markdown.
+A prompt engineering workbench for solo engineers running multi-faceted operations. Generate platform-aware, context-grounded prompts for Cursor, Claude, OpenCode, DeepSeek, Kimi, GPT, Windsurf, Cline, and generic agents — with 45 one-shot recipes, LLM consult mode, batch generation, prompt history, and direct agent piping. Export to `.cursorrules`, `.clinerules`, `AGENTS.md`, `.windsurfrules`, OpenCode JSON/JSONC, VS Code snippets, Custom GPT instructions, or Antigravity markdown.
 
 ## Research-backed design
 
@@ -150,9 +150,10 @@ The web UI **Share** button encodes the full configuration into URL query params
 
 ## Professional rewriting
 
-By default the app applies a lightweight rule-based enhancer to your raw task, context, and constraints (e.g., turning `pls check my code` into `Review the provided code`).
+By default, your raw task text passes through unchanged. Enable rewriting with `--rewrite` to polish rough input before templating:
 
-For much better results, enable LLM rewriting with `--rewrite` and a provider:
+- Without an LLM provider: a lightweight rule-based enhancer cleans up abbreviations and casual phrasing (e.g., `pls check my code` → `Please review my code`).
+- With an LLM provider: the enhancer uses the LLM to professionally rewrite your task, context, and constraints.
 
 ```bash
 # Use OpenAI
@@ -213,8 +214,12 @@ Set `PORT` to change the web UI port.
 
 - **Markdown** — copy-paste ready prompt
 - **`.cursorrules`** — Cursor IDE system prompt file
+- **`.clinerules`** — Cline / Roo Code project instructions
+- **`AGENTS.md`** — Claude Code / OpenCode project instructions
+- **`.windsurfrules`** — Windsurf workspace rules
 - **OpenCode JSON / JSONC** — system prompt block for OpenCode CLI
 - **VS Code Snippet** — reusable `.code-snippets` file
+- **Custom GPT** — OpenAI Custom GPT instructions JSON
 - **Antigravity** — markdown instructions file
 
 ## Project structure
@@ -232,6 +237,10 @@ Set `PORT` to change the web UI port.
 │   ├── enhancer.js          # Rule/LLM input polishing
 │   ├── llm.js               # Multi-provider LLM client
 │   ├── templates.js         # Agent and domain profiles
+│   ├── platforms.js         # Platform capability profiles & playbooks
+│   ├── recipes.js           # 45 one-shot prompt recipes
+│   ├── history.js           # Local prompt history store
+│   ├── piping.js            # Direct agent CLI piping
 │   └── exporters.js         # Export formatters
 ├── public/                  # Web UI assets
 └── tests/                   # Smoke tests
