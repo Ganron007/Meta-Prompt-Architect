@@ -14,10 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark output sheet by default (no more white flash) with a persisted
   light/dark theme toggle in the top bar.
 - Per-pane Clear buttons: inputs (task/context/constraints) and output.
-- **Recipe book** (`--recipe` / `--recipes`): 45 proven one-shot mega-prompt
-  patterns across 5 categories — Software Build (8), Cybersecurity (18),
-  AI/Agentic Frameworks (10), AI × Cybersecurity (6), AI × Operations (3).
+- **Recipe book** (`--recipe` / `--recipes`): 49 proven one-shot mega-prompt
+  patterns across 6 categories — Software Build (8), Cybersecurity (18),
+  Security Research Lab Methodology (4), AI/Agentic Frameworks (10),
+  AI × Cybersecurity (6), AI × Operations (3).
   Grouped by category in CLI and as optgroups in the web UI dropdown.
+- **Security Research Orchestrator** recipes: full 8-phase-gate methodology
+  (G0–G7) with evidence ledgers, adversarial audit, multi-agent policy,
+  false-completion rules, and mode-specific contracts for LAB_SOLVE,
+  LAB_BUILD, LAB_HUNT, and CLAIM_VALIDATE.
 - **Platform awareness** (`src/platforms.js`): every generated prompt now
   includes a Platform Playbook section that tells the target agent how to
   exploit its own platform's features (modes, context features, config files,

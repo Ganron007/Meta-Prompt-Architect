@@ -73,7 +73,7 @@ node src/cli.js --serve
 
 ## One-shot recipes
 
-45 proven mega-prompt patterns across 5 categories — pick one and describe your project:
+49 proven mega-prompt patterns across 6 categories — pick one and describe your project:
 
 ```bash
 # List all recipes (grouped by category)
@@ -93,6 +93,7 @@ node src/cli.js --recipe langgraph-agent --agent cursor --task "research agent t
 |---|---|
 | **Software Build** (8) | `readme-driven`, `one-shot-game`, `fullstack-app`, `prd-then-build`, `saas-starter`, `clone-builder`, `codebase-overhaul`, `spec-first-api` |
 | **Cybersecurity** (18) | `pentest-report`, `threat-model`, `secure-code-review`, `incident-response`, `malware-analysis`, `red-team-plan`, `security-architecture`, `ctf-builder`, `hardening-guide`, `detection-rules`, `security-audit`, `reverse-engineering`, `bug-bounty-recon`, `compliance-gap`, `supply-chain-audit`, `forensic-analysis`, `exploit-dev`, `security-tool` |
+| **Security Research** (4) | `sec-research-solve`, `sec-research-build`, `sec-research-hunt`, `sec-research-validate` |
 | **AI / Agentic** (10) | `langgraph-agent`, `langchain-rag`, `crewai-crew`, `autogen-team`, `mcp-server`, `ai-eval-suite`, `agent-tool-use`, `prompt-engineering-suite`, `finetune-pipeline`, `ai-api-gateway` |
 | **AI × Cybersecurity** (6) | `ai-soc-analyst`, `ai-threat-hunter`, `ai-malware-analyst`, `ai-pentest-crew`, `ai-code-security`, `ai-incident-responder` |
 | **AI × Operations** (3) | `ai-research-crew`, `ai-devops-agent`, `ai-data-pipeline` |

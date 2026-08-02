@@ -376,7 +376,11 @@ function onRecipeChange() {
     'ai-incident-responder': 'Describe IR needs: environment, detection sources, response capabilities...',
     'ai-research-crew': 'Describe the research topic, depth, output format, citation requirements...',
     'ai-devops-agent': 'Describe the infrastructure: stack, monitoring, deployment, common failures...',
-    'ai-data-pipeline': 'Describe the pipeline: sources, transformations, destination, volume, SLA...'
+    'ai-data-pipeline': 'Describe the pipeline: sources, transformations, destination, volume, SLA...',
+    'sec-research-solve': 'Describe the lab objective: expected exploit outcome, target binary/repo, attacker start...',
+    'sec-research-build': 'Describe the lab to build: vulnerability class, target stack, learning objective...',
+    'sec-research-hunt': 'Describe the target to hunt: codebase, binary, firmware, config, scope, depth...',
+    'sec-research-validate': 'Paste the claim to validate: CVE description, researcher writeup, exploit assertion...'
   };
   if (hints[id]) task.placeholder = hints[id];
   task.focus();
@@ -387,7 +391,7 @@ async function loadMeta() {
     const res = await fetch('/api/meta');
     state.meta = await res.json();
     const sel = $('recipe');
-    const catLabels = { build: 'Software Build', security: 'Cybersecurity', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
+    const catLabels = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
     const grouped = {};
     for (const r of state.meta.recipes) {
       const cat = r.category || 'build';

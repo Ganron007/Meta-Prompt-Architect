@@ -116,10 +116,11 @@ function testConfig() {
 
 function testRecipes() {
   const list = listRecipes();
-  assert(list.length >= 45, `expected at least 45 recipes, got ${list.length}`);
+  assert(list.length >= 49, `expected at least 49 recipes, got ${list.length}`);
   const categories = new Set(list.map(r => r.category));
   assert(categories.has('build'), 'should have build category');
   assert(categories.has('security'), 'should have security category');
+  assert(categories.has('sec-research'), 'should have sec-research category');
   assert(categories.has('ai'), 'should have ai category');
   assert(categories.has('ai-security'), 'should have ai-security category');
   assert(categories.has('ai-ops'), 'should have ai-ops category');
@@ -134,6 +135,14 @@ function testRecipes() {
   assert(aiRecipe.includes('StateGraph'), 'LangGraph recipe should reference LangGraph API');
   const secRecipe = renderRecipe('ai-soc-analyst', { task: 'SOC with Splunk and CrowdStrike', context: '', constraints: '' });
   assert(secRecipe.includes('SOC with Splunk and CrowdStrike'), 'AI-security recipe should interpolate');
+  const labSolve = renderRecipe('sec-research-solve', { task: 'Achieve RCE on the heap overflow challenge', context: '', constraints: '' });
+  assert(labSolve.includes('LAB_SOLVE'), 'sec-research-solve should set LAB_SOLVE mode');
+  assert(labSolve.includes('Achieve RCE on the heap overflow challenge'), 'sec-research should interpolate task');
+  assert(labSolve.includes('Phase 0'), 'sec-research should include research workflow phases');
+  assert(labSolve.includes('non_negotiable_invariants'), 'sec-research should include invariants');
+  const labBuild = renderRecipe('sec-research-build', { task: 'Build a SQLi lab', context: '', constraints: '' });
+  assert(labBuild.includes('LAB_BUILD'), 'sec-research-build should set LAB_BUILD mode');
+  assert(labBuild.includes('DESIGNED_LAB'), 'LAB_BUILD should set DESIGNED_LAB mutation policy');
   assert(renderRecipe('nonexistent', { task: 'x' }) === null, 'unknown recipe returns null');
   console.log('recipes: OK');
 }
