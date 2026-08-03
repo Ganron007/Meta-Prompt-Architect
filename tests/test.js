@@ -16,6 +16,7 @@ const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src
 const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource } = require('../src/recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } = require('../src/diff');
 const { getStrings, resolveLang, SUPPORTED_LANGS } = require('../src/i18n');
+const { pipeToAgent, pipeToWindsurf, pipeToContinue, pipeToCody, pipeToCopilot, writeAiderMessageFile } = require('../src/piping');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -471,6 +472,39 @@ async function testI18n() {
   console.log('i18n: OK');
 }
 
+function testPiping() {
+  const fs = require('fs');
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-pipe-'));
+
+  const wf = pipeToWindsurf('PROMPT BODY', 'test', dir);
+  assert(wf.endsWith('.windsurfrules') && fs.readFileSync(wf, 'utf8').includes('PROMPT BODY'), 'windsurf writes .windsurfrules');
+
+  const cf = pipeToContinue('PROMPT BODY', 'My Command!', dir);
+  assert(cf.endsWith(path.join('.continue', 'prompts', 'My_Command_.prompt')), 'continue writes .continue/prompts');
+  assert(fs.readFileSync(cf, 'utf8').includes('description: My_Command_'), 'continue prompt has frontmatter');
+
+  const cody1 = pipeToCody('FIRST PROMPT', 'cmd-one', dir);
+  pipeToCody('SECOND PROMPT', 'cmd-two', dir);
+  const codyJson = JSON.parse(fs.readFileSync(cody1, 'utf8'));
+  assert(codyJson.commands['cmd-one'].prompt === 'FIRST PROMPT', 'cody keeps first command');
+  assert(codyJson.commands['cmd-two'].prompt === 'SECOND PROMPT', 'cody merges second command');
+
+  const cop1 = pipeToCopilot('COPILOT PROMPT', 'sec-review', dir);
+  assert(cop1.endsWith(path.join('.github', 'copilot-instructions.md')), 'copilot path');
+  pipeToCopilot('MORE INSTRUCTIONS', 'api-review', dir);
+  const copContent = fs.readFileSync(cop1, 'utf8');
+  assert(copContent.includes('COPILOT PROMPT') && copContent.includes('MORE INSTRUCTIONS'), 'copilot appends without clobbering');
+
+  const aiderFile = writeAiderMessageFile('AIDER PROMPT');
+  assert(fs.existsSync(aiderFile) && fs.readFileSync(aiderFile, 'utf8') === 'AIDER PROMPT', 'aider message file written');
+  fs.unlinkSync(aiderFile);
+
+  assert.throws(() => pipeToAgent('nope', 'x', 'n', dir), /Unknown pipe target.*aider.*windsurf.*continue.*cody.*copilot/, 'unknown target lists all supported agents');
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('piping: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -494,6 +528,7 @@ async function main() {
   await testRecipePacks();
   await testDiff();
   await testI18n();
+  testPiping();
   console.log('All tests passed.');
 }
 

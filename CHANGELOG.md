@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Expanded agent piping** (`src/piping.js`): five new `--pipe` targets —
+  `aider` (via `--message-file`), `windsurf` (writes `.windsurfrules`),
+  `continue` (writes `.continue/prompts/<name>.prompt` slash command),
+  `cody` (merges a custom command into `.vscode/cody.json`), and `copilot`
+  (appends to `.github/copilot-instructions.md` without clobbering).
+  `--pipe` is now documented in `--help`.
 - **Multi-language support** (`src/i18n.js`): `--lang en|es|ja|zh` translates the
   template scaffolding (headings, role line, objective steps, input labels,
   output specs, initialization) while keeping user content, technical terms,

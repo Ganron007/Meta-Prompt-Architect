@@ -58,6 +58,7 @@ Options:
   --import-recipe <url|file>                       Import a recipe pack from a file, URL, or GitHub Gist
   --export-pack <category|all>                     Export recipes as a shareable pack JSON (to --out)
   --vars <json>                                    Values for a custom recipe's extra placeholders
+  --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
   --name <filename>                               Output file name without extension
   --out <dir>                                       Output directory (default: ./out)

@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-22_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-23_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -44,7 +44,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
 | **Version Diff** | `--history-diff id1 id2` diffs two prompts and shows which config changes produced the output changes; side-by-side view in the web UI History modal |
-| **Direct Piping** | Send prompts straight to Cursor, Claude Code, or OpenCode CLI |
+| **Direct Piping** | Send prompts straight to Cursor, Claude Code, OpenCode, Aider, Windsurf, Continue, Cody, or Copilot |
 | **Web UI** | Full-viewport drafting console with dark/light themes, shareable URLs, Ctrl+Enter |
 | **10 Export Formats** | `.cursorrules`, `.clinerules`, `AGENTS.md`, `.windsurfrules`, OpenCode JSON, VS Code Snippets, Custom GPT, and more |
 
@@ -133,7 +133,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--model` | LLM model name |
 | `--api-key` | API key (or env var) |
 | `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `vscode`, `custom-gpt`, `markdown` |
-| `--pipe` | Send to agent CLI: `cursor`, `claude`, `opencode` |
+| `--pipe` | Send to agent: `cursor`, `claude`, `opencode`, `aider`, `windsurf`, `continue`, `cody`, `copilot` |
 | `--history` | List prompt history |
 | `--history-diff` | Diff two history prompts and their configs: `--history-diff id1 id2` |
 | `--score` | Score the generated prompt against a 6-dimension quality rubric |
@@ -195,7 +195,7 @@ src/
 ├── i18n.js          # Template scaffolding translations (en/es/ja/zh)
 ├── scorer.js        # Prompt quality rubric scorer
 ├── history.js       # Prompt history store
-├── piping.js        # Agent CLI piping
+├── piping.js        # Agent piping (8 targets)
 ├── llm.js           # Multi-provider LLM client
 ├── enhancer.js      # Input polishing
 ├── templates.js     # Agent/domain profiles
