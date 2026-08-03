@@ -230,12 +230,13 @@ const platforms = {
   }
 };
 
-function getPlatform(agent) {
+function getPlatform(agent, overrides) {
+  if (overrides && overrides[agent]) return overrides[agent].normalized || overrides[agent];
   return platforms[agent] || platforms.generic;
 }
 
-function buildPlaybook(agent) {
-  const p = getPlatform(agent);
+function buildPlaybook(agent, overrides) {
+  const p = getPlatform(agent, overrides);
   const lines = [];
   lines.push(`## ${p.name} Platform Playbook`);
   lines.push('');
@@ -251,8 +252,8 @@ function buildPlaybook(agent) {
   return lines.join('\n');
 }
 
-function buildCapabilitiesSummary(agent) {
-  const p = getPlatform(agent);
+function buildCapabilitiesSummary(agent, overrides) {
+  const p = getPlatform(agent, overrides);
   return {
     name: p.name,
     type: p.type,

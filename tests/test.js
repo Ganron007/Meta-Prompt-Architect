@@ -21,6 +21,7 @@ const { evaluateResponse, checkFormatCompliance, buildJudgeMessages, parseJudgeR
 const { buildGistPayload } = require('../src/gist');
 const { editInEditor, confirmApproval, reviewPrompt } = require('../src/review');
 const { recordEvent, loadEvents, summarize: summarizeAnalytics, formatAnalytics } = require('../src/analytics');
+const { loadPlugins, validatePlugin, normalizePlatform } = require('../src/plugins');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -599,6 +600,46 @@ function testAnalytics() {
   console.log('analytics: OK');
 }
 
+async function testPlugins() {
+  const fs = require('fs');
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-plugins-'));
+
+  fs.writeFileSync(path.join(dir, 'yaml-exporter.js'), `module.exports = { name: 'YAML exporter', type: 'exporter', id: 'yaml', ext: '.yaml', format: (prompt) => 'prompt: |\\n  ' + prompt.split('\\n').join('\\n  ') };`);
+  fs.writeFileSync(path.join(dir, 'acme-platform.js'), `module.exports = { name: 'Acme Agent', type: 'platform', id: 'acme', agentType: 'IDE agent', modes: ['Turbo mode'], context: ['@acme'], config: ['.acmerc'], multiAgent: 'none', terminal: true, strengths: ['fast'], playbook: ['Use Turbo mode for everything.'] };`);
+  fs.writeFileSync(path.join(dir, 'shout-enhancer.js'), `module.exports = { name: 'Shout', type: 'enhancer', id: 'shout', enhance: (text) => text.toUpperCase() };`);
+  fs.writeFileSync(path.join(dir, 'env-scanner.js'), `module.exports = { name: 'Env scanner', type: 'scanner', id: 'env-scan', scan: (dir) => ({ root: dir, marker: 'env-scan-ran' }) };`);
+  fs.writeFileSync(path.join(dir, 'broken-plugin.js'), `module.exports = { name: 'Broken', type: 'exporter' };`);
+  fs.writeFileSync(path.join(dir, 'not-a-plugin.js'), `module.exports = 42;`);
+
+  const plugins = loadPlugins({ pluginDir: dir });
+  assert.deepStrictEqual(plugins.loaded.sort(), ['enhancer:shout', 'exporter:yaml', 'platform:acme', 'scanner:env-scan'], 'all four plugin types load');
+  assert.strictEqual(plugins.errors.length, 2, 'invalid plugins collected as errors');
+  assert(plugins.errors.some(e => e.file.includes('broken-plugin') && e.error.includes('"ext"')), 'broken exporter error explained');
+  assert(plugins.errors.some(e => e.file.includes('not-a-plugin')), 'non-object plugin rejected');
+
+  assert(validatePlugin({ name: 'x', type: 'nope', id: 'x' })[0].includes('"type"'), 'bad type rejected');
+  const normalized = normalizePlatform(require(path.join(dir, 'acme-platform.js')));
+  assert.strictEqual(normalized.type, 'IDE agent', 'platform agentType normalized');
+
+  const { buildPlaybook } = require('../src/platforms');
+  const playbook = buildPlaybook('acme', plugins.platforms);
+  assert(playbook.includes('Acme Agent Platform Playbook') && playbook.includes('Turbo mode'), 'plugin platform playbook renders');
+
+  const out = exportPrompt('PROMPT BODY', 'yaml', 'test', plugins.exporters);
+  assert(out.ext === '.yaml' && out.content.startsWith('prompt: |'), 'plugin exporter formats output');
+  const fallback = exportPrompt('PROMPT BODY', 'cursorrules', 'test', plugins.exporters);
+  assert(fallback.ext === '.cursorrules', 'built-in exporters unaffected');
+
+  const prompt = await generate({ agent: 'acme', task: 'do the thing', enhanceWith: 'shout', pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers });
+  assert(prompt.includes('DO THE THING'), 'plugin enhancer uppercased the task');
+  assert(prompt.includes('Acme Agent Platform Playbook'), 'plugin platform used in generation');
+  await assert.rejects(() => generate({ task: 'x', enhanceWith: 'nope', pluginEnhancers: plugins.enhancers }), /Unknown plugin enhancer/, 'unknown enhancer rejected');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('plugins: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -626,6 +667,7 @@ async function main() {
   testPromptTesting();
   await testCollaboration();
   testAnalytics();
+  await testPlugins();
   console.log('All tests passed.');
 }
 

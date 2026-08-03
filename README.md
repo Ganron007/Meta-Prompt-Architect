@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-26_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-27_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -43,6 +43,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>`; `--share-pack` publishes to a GitHub Gist |
 | **Review Workflow** | `--review` opens the prompt in `$EDITOR` for edit + approval before it is exported, piped, or saved to history |
 | **Analytics** | Local usage tracking with `--analytics` summary and a web UI dashboard (top agents/recipes, quality trend, test pass rate) |
+| **Plugin System** | Extend with custom exporters, platforms, enhancers, and scanners via `.mpa/plugins/` manifests |
 | **Multi-Language** | `--lang es|ja|zh` translates template scaffolding while keeping user content and technical terms intact |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
@@ -156,6 +157,9 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--vars` | JSON object with values for a custom recipe's extra placeholders |
 | `--json` | Machine-readable output |
 | `--analytics` | Usage analytics summary (top agents, recipes, quality trend) |
+| `--plugins` | List loaded plugins (from `.mpa/plugins/` / `~/.mpa/plugins/`) |
+| `--enhance-with` | Apply plugin enhancers to inputs: `--enhance-with id1,id2` |
+| `--scanner` | Use a plugin scanner for project context (also in `--consult`) |
 | `--serve` | Start web UI |
 
 </details>
@@ -210,6 +214,7 @@ src/
 ├── gist.js          # Publish recipe packs to GitHub Gist
 ├── review.js        # $EDITOR review + approval gate
 ├── analytics.js     # Local usage analytics + summary
+├── plugins.js       # Plugin loader (exporters/platforms/enhancers/scanners)
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent piping (8 targets)
 ├── llm.js           # Multi-provider LLM client

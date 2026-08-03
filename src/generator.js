@@ -19,6 +19,9 @@ async function generate(config) {
     customRecipes = {},
     variables = {},
     lang = 'en',
+    pluginPlatforms = {},
+    pluginEnhancers = {},
+    enhanceWith = [],
     provider,
     model,
     apiKey,
@@ -36,7 +39,18 @@ async function generate(config) {
     if (constraints) enhancedConstraints = await enhanceWithLLM(constraints, llmConfig);
   }
 
-  const playbook = buildPlaybook(agent);
+  const enhanceIds = Array.isArray(enhanceWith) ? enhanceWith : String(enhanceWith || '').split(',').map(s => s.trim()).filter(Boolean);
+  for (const id of enhanceIds) {
+    const enhancer = pluginEnhancers[id];
+    if (!enhancer || typeof enhancer.enhance !== 'function') {
+      throw new Error(`Unknown plugin enhancer: "${id}". See --plugins.`);
+    }
+    if (enhancedTask) enhancedTask = String(enhancer.enhance(enhancedTask));
+    if (enhancedContext) enhancedContext = String(enhancer.enhance(enhancedContext));
+    if (enhancedConstraints) enhancedConstraints = String(enhancer.enhance(enhancedConstraints));
+  }
+
+  const playbook = buildPlaybook(agent, pluginPlatforms);
 
   if (recipe && getRecipe(recipe, customRecipes)) {
     const rendered = renderRecipe(recipe, {

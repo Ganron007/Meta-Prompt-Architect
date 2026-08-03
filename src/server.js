@@ -12,8 +12,10 @@ const { listHistory, getHistoryEntry } = require('./history');
 const { scorePrompt } = require('./scorer');
 const { diffLines, summarizeDiff, configChanges } = require('./diff');
 const { recordEvent, loadEvents, summarize: summarizeAnalytics } = require('./analytics');
+const { loadPlugins } = require('./plugins');
 
 loadEnvChain();
+const plugins = loadPlugins();
 
 const app = express();
 app.use(express.json());
@@ -21,7 +23,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function withCustomRecipes(config = {}) {
   const project = config.project || process.cwd();
-  return { ...config, customRecipes: loadCustomRecipes({ project, recipeDir: config.recipeDir }) };
+  return { ...config, customRecipes: loadCustomRecipes({ project, recipeDir: config.recipeDir }), pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, enhanceWith: config.enhanceWith || [] };
 }
 
 app.post('/api/generate', async (req, res) => {
@@ -60,7 +62,7 @@ app.post('/api/export', async (req, res) => {
     } else {
       prompt = await generate(cfg);
     }
-    const result = exportPrompt(prompt, format, name);
+    const result = exportPrompt(prompt, format, name, plugins.exporters);
     recordEvent('export', { format, agent: config.agent });
     res.json(result);
   } catch (err) {
@@ -110,6 +112,17 @@ app.post('/api/scan', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+app.get('/api/plugins', (req, res) => {
+  res.json({
+    loaded: plugins.loaded,
+    errors: plugins.errors,
+    exporters: Object.keys(plugins.exporters),
+    platforms: Object.keys(plugins.platforms),
+    enhancers: Object.keys(plugins.enhancers),
+    scanners: Object.keys(plugins.scanners)
+  });
 });
 
 app.get('/api/analytics', (req, res) => {

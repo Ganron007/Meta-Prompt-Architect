@@ -62,7 +62,11 @@ function toMarkdown(prompt) {
   return prompt;
 }
 
-function exportPrompt(prompt, format, name = 'generated-prompt') {
+function exportPrompt(prompt, format, name = 'generated-prompt', pluginExporters = {}) {
+  if (pluginExporters[format]) {
+    const plugin = pluginExporters[format];
+    return { ext: plugin.ext, content: String(plugin.format(prompt, name)), plugin: plugin.id };
+  }
   switch (format) {
     case 'cursorrules':
       return { ext: '.cursorrules', content: toCursorRules(prompt) };

@@ -30,7 +30,7 @@ Your sole job: translate a rough request into ONE highly-structured, context-ric
 function buildArchitectRequest(config, projectScan) {
   const agentProfile = templates.agentProfiles[config.agent] || templates.agentProfiles.generic;
   const domainProfile = templates.domainProfiles[config.domain] || templates.domainProfiles.general;
-  const caps = buildCapabilitiesSummary(config.agent);
+  const caps = buildCapabilitiesSummary(config.agent, config.pluginPlatforms);
 
   const parts = [
     `## Rough request from the user\n${config.task}`,
@@ -57,7 +57,12 @@ The generated prompt MUST include a "Platform Playbook" section exploiting these
   if (config.outputFormat) parts.push(`\n## Desired output format\n${config.outputFormat}`);
   if (config.tone) parts.push(`\n## Desired tone\n${config.tone}`);
   if (config.lang && config.lang !== 'en') parts.push(`\n## Output language\nWrite the entire prompt in ${config.langName || config.lang}. Keep technical terms, file paths, tool names, and code in their original form.`);
-  if (projectScan) parts.push(`\n## PROJECT CONTEXT (use to ground the prompt)\n${summarize(projectScan)}`);
+  if (projectScan) {
+    const rendered = typeof projectScan === 'string'
+      ? projectScan
+      : (projectScan.files && projectScan.tree ? summarize(projectScan) : JSON.stringify(projectScan, null, 2).slice(0, 6000));
+    parts.push(`\n## PROJECT CONTEXT (use to ground the prompt)\n${rendered}`);
+  }
 
   parts.push(`\nNow produce the final prompt for the ${config.agent} agent, following the Universal Prompt Structure and including the Platform Playbook.`);
   return parts.join('\n');
@@ -74,9 +79,9 @@ function unwrapPrompt(text) {
 }
 
 async function consultArchitect(config) {
-  const projectScan = config.project
-    ? scanProject(config.project, config.scanOptions || {})
-    : null;
+  const projectScan = config.pluginScanner && typeof config.pluginScanner.scan === 'function'
+    ? config.pluginScanner.scan(config.project || process.cwd())
+    : (config.project ? scanProject(config.project, config.scanOptions || {}) : null);
 
   const messages = [
     { role: 'system', content: ARCHITECT_SYSTEM },
@@ -96,7 +101,7 @@ async function consultArchitect(config) {
   return {
     prompt: unwrapPrompt(raw),
     raw,
-    scanned: projectScan ? { root: projectScan.root, files: Object.keys(projectScan.files), branch: projectScan.git?.branch } : null
+    scanned: projectScan ? { root: projectScan.root || config.project || null, files: projectScan.files ? Object.keys(projectScan.files) : [], branch: projectScan.git && projectScan.git.branch } : null
   };
 }
 

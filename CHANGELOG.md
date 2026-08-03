@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Plugin system** (`src/plugins.js`): drop `.js` manifests into `.mpa/plugins/`
+  or `~/.mpa/plugins/` to extend the tool with custom exporters (`--export
+  <id>`), platforms (`--agent <id>` with a full playbook), enhancers
+  (`--enhance-with <id1,id2>`), and project scanners (`--scanner <id>`, also
+  used for consult grounding). `--plugins` and `/api/plugins` list loaded
+  plugins and validation errors; invalid plugins never crash the main flow.
 - **Usage analytics** (`src/analytics.js`): generation, test, and export events
   recorded locally (`.mpa-analytics.json`, capped at 1000). `--analytics`
   prints a summary (top agents, modes, recipes, export formats, test pass

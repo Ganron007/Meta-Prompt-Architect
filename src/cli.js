@@ -10,6 +10,7 @@ const { parseChain, buildChain, wrapChainStep } = require('./chain');
 const { exportPack, importPack } = require('./recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, configChanges } = require('./diff');
 const { recordEvent, loadEvents, summarize, formatAnalytics } = require('./analytics');
+const { loadPlugins } = require('./plugins');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -60,6 +61,10 @@ Options:
   --export-pack <category|all>                     Export recipes as a shareable pack JSON (to --out)
   --share-pack <category|all>                      Publish a recipe pack to a GitHub Gist (needs GITHUB_TOKEN)
   --review                                          Edit + approve the prompt in $EDITOR before use
+  --enhance-with <id1,id2>                          Apply plugin enhancers to task/context/constraints
+  --scanner <id>                                    Use a plugin scanner for project context
+  --plugins                                         List loaded plugins and exit
+  --plugin-dir <dir>                                Explicit plugin directory (default: .mpa/plugins + ~/.mpa/plugins)
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
@@ -102,7 +107,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -142,6 +147,10 @@ function parseArgs(argv) {
       case '--export-pack': args.exportPack = argv[++i]; break;
       case '--share-pack': args.sharePack = argv[++i]; break;
       case '--review': args.review = true; break;
+      case '--enhance-with': args.enhanceWith = argv[++i]; break;
+      case '--scanner': args.scanner = argv[++i]; break;
+      case '--plugins': args.plugins = true; break;
+      case '--plugin-dir': args.pluginDir = argv[++i]; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
@@ -204,6 +213,20 @@ async function main() {
     project: args.project || process.cwd(),
     recipeDir: args.recipeDir
   });
+  const plugins = loadPlugins({
+    project: args.project || process.cwd(),
+    pluginDir: args.pluginDir
+  });
+
+  if (args.plugins) {
+    if (args.json) {
+      console.log(JSON.stringify({ loaded: plugins.loaded, errors: plugins.errors, exporters: Object.keys(plugins.exporters), platforms: Object.keys(plugins.platforms), enhancers: Object.keys(plugins.enhancers), scanners: Object.keys(plugins.scanners) }, null, 2));
+    } else {
+      console.log(plugins.loaded.length ? `\nLoaded plugins:\n${plugins.loaded.map(p => `  ${p}`).join('\n')}` : '\nNo plugins loaded (drop .js files into .mpa/plugins/ or ~/.mpa/plugins/).');
+      for (const err of plugins.errors) console.error(`  plugin error: ${err.file} — ${err.error}`);
+    }
+    return;
+  }
 
   if (args.importRecipe) {
     const result = await importPack(args.importRecipe, {
@@ -355,6 +378,12 @@ async function main() {
   }
 
   if (args.scan) {
+    if (args.scanner) {
+      const scanner = plugins.scanners[args.scanner];
+      if (!scanner) { console.error(`Unknown plugin scanner: "${args.scanner}". See --plugins.`); process.exit(1); }
+      console.log(JSON.stringify(scanner.scan(args.project || process.cwd()), null, 2));
+      return;
+    }
     const { scanProject, summarize: summarizeScan } = require('./context');
     const scan = scanProject(args.project || process.cwd());
     if (args.json) console.log(JSON.stringify(scan, null, 2));
@@ -372,18 +401,22 @@ async function main() {
   const agentList = args.agents ? args.agents.split(',').map(a => a.trim()).filter(Boolean) : [args.agent || 'generic'];
   const chain = args.chain ? buildChain(parseChain(args.chain), customRecipes) : null;
   if (chain && args.consult) console.error('[chain] --consult ignored: chains run in recipe mode.');
+  const pluginScanner = args.scanner
+    ? (plugins.scanners[args.scanner] || null)
+    : null;
+  if (args.scanner && !pluginScanner) { console.error(`Unknown plugin scanner: "${args.scanner}". See --plugins.`); process.exit(1); }
 
   const results = [];
   for (const agent of agentList) {
     if (chain) {
       for (let i = 0; i < chain.length; i++) {
-        const agentArgs = { ...args, agent, variables, customRecipes, recipe: chain[i].id };
+        const agentArgs = { ...args, agent, variables, customRecipes, recipe: chain[i].id, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers };
         const prompt = await generate(agentArgs);
         results.push({ agent, mode: 'chain', prompt: wrapChainStep(chain, i, prompt), chainStep: chain[i], chainSize: chain.length, score: args.score ? scorePrompt(prompt, { agent }) : null });
       }
       continue;
     }
-    const agentArgs = { ...args, agent, variables, customRecipes };
+    const agentArgs = { ...args, agent, variables, customRecipes, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, pluginScanner };
     let prompt;
     let mode = 'template';
 
@@ -469,7 +502,7 @@ async function main() {
     const outDir = path.resolve(args.out);
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
     for (const { agent, prompt, chainStep } of results) {
-      const { ext, content } = exportPrompt(prompt, args.export, args.name);
+      const { ext, content } = exportPrompt(prompt, args.export, args.name, plugins.exporters);
       const safeName = String(args.name || 'generated-prompt').replace(/[^a-zA-Z0-9._-]/g, '_');
       const suffix = results.length > 1
         ? '-' + String(chainStep ? `step${chainStep.position}-${chainStep.id}` : agent).replace(/[^a-zA-Z0-9._-]/g, '_')
