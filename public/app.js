@@ -298,10 +298,103 @@ function showToast(message, type = 'success') {
   }, 2600);
 }
 
+let historySelection = new Set();
+
+async function openHistory() {
+  const modal = $('historyModal');
+  modal.hidden = false;
+  $('diffView').hidden = true;
+  $('configChanges').innerHTML = '';
+  $('diffSummary').textContent = '';
+  historySelection = new Set();
+  $('diffBtn').disabled = true;
+  const list = $('historyList');
+  list.innerHTML = '<p class="modal-hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/history?limit=50');
+    const entries = await res.json();
+    if (!entries.length) {
+      list.innerHTML = '<p class="modal-hint">No history yet. Forge a prompt first.</p>';
+      return;
+    }
+    list.innerHTML = '';
+    for (const e of entries) {
+      const row = document.createElement('label');
+      row.className = 'history-row';
+      const when = new Date(e.timestamp).toLocaleString();
+      row.innerHTML = `<input type="checkbox" data-id="${e.id}" /> <span class="history-id">${e.id.slice(-6)}</span> <span class="history-task">${(e.task || '(no task)').slice(0, 60)}</span> <span class="history-meta">${e.agent} · ${e.mode || 'template'} · ${when}</span>`;
+      row.querySelector('input').addEventListener('change', (ev) => {
+        const id = ev.target.dataset.id;
+        if (ev.target.checked) {
+          if (historySelection.size >= 2) {
+            const first = historySelection.values().next().value;
+            historySelection.delete(first);
+            const old = list.querySelector(`input[data-id="${first}"]`);
+            if (old) old.checked = false;
+          }
+          historySelection.add(id);
+        } else {
+          historySelection.delete(id);
+        }
+        $('diffBtn').disabled = historySelection.size !== 2;
+      });
+      list.appendChild(row);
+    }
+  } catch (err) {
+    list.innerHTML = `<p class="modal-hint">Failed to load history: ${err.message}</p>`;
+  }
+}
+
+async function runDiff() {
+  const [id1, id2] = [...historySelection];
+  try {
+    const res = await fetch(`/api/diff?id1=${encodeURIComponent(id1)}&id2=${encodeURIComponent(id2)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    $('diffSummary').textContent = `+${data.summary.added} / -${data.summary.removed} lines (${data.summary.unchanged} unchanged)`;
+    const cfg = $('configChanges');
+    cfg.innerHTML = data.configChanges.length
+      ? data.configChanges.map(c => `<span class="chip amber">${c.field}: ${String(c.from)} → ${String(c.to)}</span>`).join('')
+      : '<span class="chip">no config changes</span>';
+    const view = $('diffView');
+    view.hidden = false;
+    view.innerHTML = '';
+    const addLine = (cls, prefix, text) => {
+      const div = document.createElement('div');
+      div.className = `diff-line ${cls}`;
+      div.textContent = `${prefix} ${text}`;
+      view.appendChild(div);
+    };
+    let buffer = [];
+    const flushSame = () => {
+      if (buffer.length <= 4) {
+        buffer.forEach(t => addLine('diff-same', ' ', t));
+      } else {
+        buffer.slice(0, 2).forEach(t => addLine('diff-same', ' ', t));
+        addLine('diff-gap', '', `··· ${buffer.length - 4} unchanged lines ···`);
+        buffer.slice(-2).forEach(t => addLine('diff-same', ' ', t));
+      }
+      buffer = [];
+    };
+    for (const op of data.diff) {
+      if (op.type === 'same') { buffer.push(op.text); continue; }
+      flushSame();
+      addLine(op.type === 'add' ? 'diff-add' : 'diff-del', op.type === 'add' ? '+' : '-', op.text);
+    }
+    flushSame();
+    if (!view.children.length) view.innerHTML = '<div class="diff-gap">prompts are identical</div>';
+  } catch (err) {
+    showToast(err.message || 'Diff failed.', 'error');
+  }
+}
+
 $('generateBtn').addEventListener('click', generate);
 $('exportBtn').addEventListener('click', exportFile);
 $('copyBtn').addEventListener('click', copyToClipboard);
 $('shareBtn').addEventListener('click', shareUrl);
+$('historyBtn').addEventListener('click', openHistory);
+$('historyClose').addEventListener('click', () => { $('historyModal').hidden = true; });
+$('diffBtn').addEventListener('click', runDiff);
 $('clearInputsBtn').addEventListener('click', clearInputs);
 $('clearOutputBtn').addEventListener('click', clearOutput);
 $('rewrite').addEventListener('change', toggleLLMConfig);

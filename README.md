@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-20_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-21_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -42,6 +42,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>` |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
+| **Version Diff** | `--history-diff id1 id2` diffs two prompts and shows which config changes produced the output changes; side-by-side view in the web UI History modal |
 | **Direct Piping** | Send prompts straight to Cursor, Claude Code, or OpenCode CLI |
 | **Web UI** | Full-viewport drafting console with dark/light themes, shareable URLs, Ctrl+Enter |
 | **10 Export Formats** | `.cursorrules`, `.clinerules`, `AGENTS.md`, `.windsurfrules`, OpenCode JSON, VS Code Snippets, Custom GPT, and more |
@@ -132,6 +133,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `vscode`, `custom-gpt`, `markdown` |
 | `--pipe` | Send to agent CLI: `cursor`, `claude`, `opencode` |
 | `--history` | List prompt history |
+| `--history-diff` | Diff two history prompts and their configs: `--history-diff id1 id2` |
 | `--score` | Score the generated prompt against a 6-dimension quality rubric |
 | `--validate-recipes` | Validate recipe fields, categories, and placeholders |
 | `--create-recipe` | Build + save a custom recipe (use `--recipe-name/-category/-role/-steps/-rules/-output/-placeholders`) |
@@ -187,6 +189,7 @@ src/
 ├── custom-recipes.js # Custom recipe builder (build/validate/save/load)
 ├── chain.js         # Prompt chain handoffs + quality gates
 ├── recipe-packs.js  # Recipe pack import/export (file, URL, Gist)
+├── diff.js          # Line diff + config-change detection
 ├── scorer.js        # Prompt quality rubric scorer
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent CLI piping

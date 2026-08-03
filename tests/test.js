@@ -14,6 +14,7 @@ const { scorePrompt, formatScore } = require('../src/scorer');
 const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('../src/custom-recipes');
 const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src/chain');
 const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource } = require('../src/recipe-packs');
+const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } = require('../src/diff');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -408,6 +409,37 @@ async function testRecipePacks() {
   console.log('recipe packs: OK');
 }
 
+async function testDiff() {
+  const ops = diffLines('a\nb\nc', 'a\nx\nc');
+  assert.deepStrictEqual(ops.map(o => o.type), ['same', 'del', 'add', 'same'], 'LCS diff marks change');
+  const summary = summarizeDiff(ops);
+  assert(summary.added === 1 && summary.removed === 1 && summary.unchanged === 2, 'summary counts');
+  assert.strictEqual(diffLines('same', 'same').filter(o => o.type !== 'same').length, 0, 'identical prompts produce no changes');
+  assert.strictEqual(diffLines('', 'new').filter(o => o.type === 'add').length, 1, 'empty→content is one add');
+  const long = diffLines(Array.from({ length: 20 }, (_, i) => `line${i}`).join('\n'), Array.from({ length: 20 }, (_, i) => i === 10 ? 'CHANGED' : `line${i}`).join('\n'));
+  const collapsed = collapseSameRuns(long, 2);
+  assert(collapsed.some(o => o.type === 'gap'), 'long unchanged runs collapse to a gap');
+  const text = formatDiff(ops);
+  assert(text.includes('- b') && text.includes('+ x'), 'formatDiff prefixes +/-');
+
+  const changes = configChanges({ agent: 'cursor', task: 'x', domain: 'security' }, { agent: 'claude', task: 'x', domain: 'security' });
+  assert.strictEqual(changes.length, 1, 'one config field changed');
+  assert.strictEqual(changes[0].field, 'agent');
+  assert.strictEqual(configChanges({ agent: 'cursor' }, { agent: 'cursor' }).length, 0, 'no changes detected');
+
+  clearHistory();
+  addHistoryEntry({ agent: 'cursor', mode: 'template', prompt: 'line one\nline two', task: 't1', domain: 'security' });
+  addHistoryEntry({ agent: 'claude', mode: 'template', prompt: 'line one\nline 2', task: 't1', domain: 'security' });
+  const list = listHistory();
+  const a = getHistoryEntry(list[1].id.slice(-6));
+  const b = getHistoryEntry(list[0].id.slice(-6));
+  const realOps = diffLines(a.prompt, b.prompt);
+  assert(summarizeDiff(realOps).added === 1 && summarizeDiff(realOps).removed === 1, 'history entries diff');
+  assert(configChanges(a, b).some(c => c.field === 'agent'), 'history config diff catches agent change');
+  clearHistory();
+  console.log('diff: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -429,6 +461,7 @@ async function main() {
   await testCustomRecipes();
   await testChaining();
   await testRecipePacks();
+  await testDiff();
   console.log('All tests passed.');
 }
 

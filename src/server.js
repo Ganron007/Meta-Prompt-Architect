@@ -10,6 +10,7 @@ const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes } = require('./cu
 const { platforms } = require('./platforms');
 const { listHistory, getHistoryEntry } = require('./history');
 const { scorePrompt } = require('./scorer');
+const { diffLines, summarizeDiff, configChanges } = require('./diff');
 
 loadEnvChain();
 
@@ -114,6 +115,22 @@ app.get('/api/history/:id', (req, res) => {
   const entry = getHistoryEntry(req.params.id);
   if (!entry) return res.status(404).json({ error: 'Not found' });
   res.json({ id: entry.id, timestamp: entry.timestamp, agent: entry.agent, domain: entry.domain, mode: entry.mode, task: entry.task, prompt: entry.prompt });
+});
+
+app.get('/api/diff', (req, res) => {
+  const { id1, id2 } = req.query;
+  if (!id1 || !id2) return res.status(400).json({ error: 'id1 and id2 query params are required' });
+  const a = getHistoryEntry(id1);
+  const b = getHistoryEntry(id2);
+  if (!a || !b) return res.status(404).json({ error: `No history entry for ${!a ? id1 : id2}` });
+  const ops = diffLines(a.prompt, b.prompt);
+  res.json({
+    a: { id: a.id, timestamp: a.timestamp, agent: a.agent, task: a.task },
+    b: { id: b.id, timestamp: b.timestamp, agent: b.agent, task: b.task },
+    summary: summarizeDiff(ops),
+    configChanges: configChanges(a, b),
+    diff: ops
+  });
 });
 
 const HOST = process.env.HOST || '127.0.0.1';

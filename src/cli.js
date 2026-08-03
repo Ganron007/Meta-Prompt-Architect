@@ -8,6 +8,7 @@ const { listRecipes, recipeCategories, validateRecipes } = require('./recipes');
 const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('./custom-recipes');
 const { parseChain, buildChain, wrapChainStep } = require('./chain');
 const { exportPack, importPack } = require('./recipe-packs');
+const { diffLines, summarizeDiff, formatDiff, configChanges } = require('./diff');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -67,6 +68,7 @@ Options:
   --history-get <id>                                Show a specific prompt from history
   --history-clear                                   Clear prompt history
   --history-replay <id>                             Regenerate a prompt from history
+  --history-diff <id1> <id2>                        Diff two history prompts and their configs
   --serve                                           Start the web UI server
   --help                                            Show this help
 
@@ -91,7 +93,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -145,6 +147,7 @@ function parseArgs(argv) {
       case '--history-get': args.historyGet = argv[++i]; break;
       case '--history-clear': args.historyClear = true; break;
       case '--history-replay': args.historyReplay = argv[++i]; break;
+      case '--history-diff': args.historyDiff = [argv[++i], argv[++i]]; break;
       case '--serve': args.serve = true; break;
       case '--help': args.help = true; break;
     }
@@ -267,6 +270,31 @@ async function main() {
     const entry = getHistoryEntry(args.historyGet);
     if (!entry) { console.error('No history entry with that id.'); process.exit(1); }
     console.log(entry.prompt);
+    return;
+  }
+
+  if (args.historyDiff) {
+    const [id1, id2] = args.historyDiff;
+    if (!id1 || !id2) { console.error('Error: --history-diff needs two ids, e.g. --history-diff a1b2c3 d4e5f6'); process.exit(1); }
+    const a = getHistoryEntry(id1);
+    const b = getHistoryEntry(id2);
+    if (!a || !b) { console.error(`No history entry for ${!a ? id1 : id2}.`); process.exit(1); }
+    const ops = diffLines(a.prompt, b.prompt);
+    const summary = summarizeDiff(ops);
+    const changes = configChanges(a, b);
+    if (args.json) {
+      console.log(JSON.stringify({ a: a.id, b: b.id, summary, configChanges: changes, diff: ops }, null, 2));
+    } else {
+      console.log(`\nDiff ${a.id.slice(-6)} → ${b.id.slice(-6)}  (+${summary.added} / -${summary.removed} lines, ${summary.unchanged} unchanged)`);
+      if (changes.length) {
+        console.log('\nConfig changes:');
+        for (const c of changes) console.log(`  ${c.field}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}`);
+      } else {
+        console.log('\nConfig changes: none — output differences come from recipe/template drift or time.');
+      }
+      console.log('');
+      console.log(formatDiff(ops) || '  (identical prompts)');
+    }
     return;
   }
 

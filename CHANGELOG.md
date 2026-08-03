@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Prompt versioning & diff** (`src/diff.js`): LCS line diff between any two
+  history entries. `--history-diff <id1> <id2>` prints a collapsed +/- diff
+  plus a config-change summary (which config fields produced the output
+  changes). `GET /api/diff?id1&id2` exposes the same data; the web UI History
+  button opens a modal to browse entries, select two, and view the diff with
+  config-change chips.
 - **Recipe packs** (`src/recipe-packs.js`): shareable pack format
   (`mpa-recipe-pack` JSON with name, version, metadata, recipes).
   `--export-pack <category|all>` writes a pack to `--out`; `--import-recipe
