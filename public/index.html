@@ -50,13 +50,20 @@
           <fieldset class="group">
             <legend>The ask</legend>
             <div class="field">
-              <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
+              <div class="field-label-row">
+                <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
+                <button id="toggleRecipeBuilder" class="btn-text" type="button">Build recipe</button>
+              </div>
               <div class="select-wrap">
                 <select id="recipe">
                   <option value="">None — freeform task</option>
                 </select>
               </div>
               <span class="recipe-tagline" id="recipeTagline"></span>
+            </div>
+            <div id="recipeVariables" class="recipe-variables" hidden>
+              <span class="recipe-variables-title">Recipe inputs</span>
+              <div id="recipeVariableFields" class="recipe-variable-fields"></div>
             </div>
             <div class="field">
               <label for="task">Task / objective</label>
@@ -70,6 +77,63 @@
               <label for="constraints">Constraints <span class="optional">optional</span></label>
               <textarea id="constraints" rows="2" placeholder="e.g. no hardcoded secrets, one-shot accuracy, keep under 500 lines..."></textarea>
             </div>
+          </fieldset>
+
+          <fieldset class="group recipe-builder" id="recipeBuilder" hidden>
+            <legend>Custom recipe builder</legend>
+            <p class="builder-intro">Define a reusable prompt pattern, preview it, then save it locally.</p>
+            <div class="field-row">
+              <div class="field">
+                <label for="builderName">Recipe name</label>
+                <input type="text" id="builderName" placeholder="e.g. Release readiness review" />
+              </div>
+              <div class="field">
+                <label for="builderCategory">Category</label>
+                <div class="select-wrap">
+                  <select id="builderCategory"></select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="builderRole">Role / persona</label>
+              <textarea id="builderRole" rows="2" placeholder="e.g. Staff release engineer and risk reviewer"></textarea>
+            </div>
+            <div class="field">
+              <label for="builderSteps">Workflow steps <span class="optional">one per line</span></label>
+              <textarea id="builderSteps" rows="4" placeholder="Inventory the release surface&#10;Verify quality gates&#10;Produce an owner-ready decision"></textarea>
+            </div>
+            <div class="field">
+              <label for="builderRules">Hard rules <span class="optional">one per line</span></label>
+              <textarea id="builderRules" rows="3" placeholder="Do not invent evidence&#10;Call out unresolved blockers"></textarea>
+            </div>
+            <div class="field">
+              <label for="builderOutput">Output format</label>
+              <textarea id="builderOutput" rows="2" placeholder="A prioritized checklist, risk table, and go/no-go recommendation"></textarea>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="builderPlaceholders">Extra placeholders <span class="optional">comma-separated</span></label>
+                <input type="text" id="builderPlaceholders" placeholder="audience, deployment_target" />
+              </div>
+              <div class="field">
+                <label for="builderScope">Save location</label>
+                <div class="select-wrap">
+                  <select id="builderScope">
+                    <option value="project">Project .mpa/recipes</option>
+                    <option value="user">User ~/.mpa/recipes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="builderProject">Project path <span class="optional">optional for project scope</span></label>
+              <input type="text" id="builderProject" placeholder="Blank uses the server's current project" />
+            </div>
+            <div class="builder-actions">
+              <button id="previewRecipeBtn" class="btn-ghost" type="button">Preview template</button>
+              <button id="saveRecipeBtn" class="btn-primary builder-save" type="button">Save recipe</button>
+            </div>
+            <pre id="builderPreview" class="builder-preview" hidden></pre>
           </fieldset>
 
           <fieldset class="group">

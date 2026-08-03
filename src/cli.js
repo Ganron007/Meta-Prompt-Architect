@@ -5,6 +5,7 @@ const { consultArchitect } = require('./architect');
 const { exportPrompt } = require('./exporters');
 const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes, recipeCategories, validateRecipes } = require('./recipes');
+const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('./custom-recipes');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -38,6 +39,18 @@ Options:
   --api-base <url>                                Custom API base URL
   --recipe <name>                                 Use a proven one-shot recipe (see --recipes)
   --recipes                                         List available recipes and exit
+  --create-recipe                                  Build and save a custom recipe (see recipe options below)
+  --recipe-name <text>                             Custom recipe name
+  --recipe-category <id>                           Custom recipe category (for example: build, security)
+  --recipe-role <text>                             Custom recipe role/persona
+  --recipe-steps <step|step>                       Workflow steps, separated by | or new lines
+  --recipe-rules <rule|rule>                       Hard rules, separated by | or new lines
+  --recipe-output <text>                           Required final output format
+  --recipe-placeholders <csv>                      Optional custom placeholders (for example: audience,stack)
+  --recipe-scope <project|user>                    Save under .mpa/recipes or ~/.mpa/recipes (default: project)
+  --recipe-dir <dir>                               Explicit custom recipe directory (load or save)
+  --overwrite-recipe                               Replace an existing custom recipe file
+  --vars <json>                                    Values for a custom recipe's extra placeholders
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
   --name <filename>                               Output file name without extension
   --out <dir>                                       Output directory (default: ./out)
@@ -65,12 +78,15 @@ Examples:
 
   # Classic template mode:
   prompt-architect --agent cursor --domain security --task "Review API key handling" --export cursorrules
+
+  # Save a custom recipe in the current project's .mpa/recipes directory:
+  prompt-architect --create-recipe --recipe-name "Launch plan" --recipe-category build --recipe-role "product launch lead" --recipe-steps "Plan|Build|Verify" --recipe-rules "State assumptions|Protect secrets" --recipe-output "Launch checklist and owners"
 `);
 }
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -93,6 +109,18 @@ function parseArgs(argv) {
       case '--consult': args.consult = true; break;
       case '--recipe': args.recipe = argv[++i]; break;
       case '--recipes': args.recipes = true; break;
+      case '--create-recipe': args.createRecipe = true; break;
+      case '--recipe-name': args.recipeName = argv[++i]; break;
+      case '--recipe-category': args.recipeCategory = argv[++i]; break;
+      case '--recipe-role': args.recipeRole = argv[++i]; break;
+      case '--recipe-steps': args.recipeSteps = argv[++i]; break;
+      case '--recipe-rules': args.recipeRules = argv[++i]; break;
+      case '--recipe-output': args.recipeOutput = argv[++i]; break;
+      case '--recipe-placeholders': args.recipePlaceholders = argv[++i]; break;
+      case '--recipe-scope': args.recipeScope = argv[++i]; break;
+      case '--recipe-dir': args.recipeDir = argv[++i]; break;
+      case '--overwrite-recipe': args.overwriteRecipe = true; break;
+      case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
       case '--model': args.model = argv[++i]; break;
@@ -123,6 +151,32 @@ async function main() {
   if (args.help) { printUsage(); process.exit(0); }
   if (args.serve) { require('./server').start(); return; }
 
+  if (args.createRecipe) {
+    const recipe = buildCustomRecipe({
+      name: args.recipeName,
+      category: args.recipeCategory,
+      role: args.recipeRole,
+      steps: args.recipeSteps,
+      hardRules: args.recipeRules,
+      outputFormat: args.recipeOutput,
+      placeholders: args.recipePlaceholders
+    });
+    const saved = saveCustomRecipe(recipe, {
+      scope: args.recipeScope || 'project',
+      project: args.project || process.cwd(),
+      recipeDir: args.recipeDir,
+      overwrite: args.overwriteRecipe
+    });
+    if (args.json) console.log(JSON.stringify(saved, null, 2));
+    else console.log(`Custom recipe "${saved.recipe.id}" saved to ${saved.filePath}`);
+    return;
+  }
+
+  const customRecipes = loadCustomRecipes({
+    project: args.project || process.cwd(),
+    recipeDir: args.recipeDir
+  });
+
   if (args.validateRecipes) {
     const report = validateRecipes();
     if (args.json) {
@@ -139,7 +193,7 @@ async function main() {
 
   if (args.recipes) {
     const grouped = {};
-    for (const r of listRecipes()) {
+    for (const r of listRecipes(customRecipes)) {
       const cat = r.category || 'build';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(r);
@@ -192,6 +246,7 @@ async function main() {
     args.tone = entry.tone;
     args.includeExamples = entry.includeExamples;
     args.recipe = entry.recipe;
+    args.variables = entry.variables;
     args.consult = entry.consult;
     args.rewrite = entry.rewrite;
     console.error(`[history] replaying entry ${entry.id.slice(-6)} — ${entry.task.slice(0, 50)}`);
@@ -210,11 +265,13 @@ async function main() {
     process.exit(1);
   }
 
+  const variables = parseVariables(args.vars || args.variables);
+
   const agentList = args.agents ? args.agents.split(',').map(a => a.trim()).filter(Boolean) : [args.agent || 'generic'];
 
   const results = [];
   for (const agent of agentList) {
-    const agentArgs = { ...args, agent };
+    const agentArgs = { ...args, agent, variables, customRecipes };
     let prompt;
     let mode = 'template';
 
@@ -240,7 +297,7 @@ async function main() {
   }
 
   for (const { agent, mode, prompt } of results) {
-    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, includeExamples: args.includeExamples, recipe: args.recipe, consult: args.consult, rewrite: args.rewrite });
+    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, includeExamples: args.includeExamples, recipe: args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
   }
 
   if (args.pipe) {

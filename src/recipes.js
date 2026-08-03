@@ -7354,24 +7354,46 @@ For each cryptographic usage:
   }
 };
 
-function getRecipe(name) {
-  return recipes[name] || null;
+function getRecipe(name, customRecipes = {}) {
+  return recipes[name] || customRecipes[name] || null;
 }
 
-function listRecipes() {
-  return Object.entries(recipes).map(([id, r]) => ({ id, label: r.label, tagline: r.tagline, category: r.category || 'build' }));
+function listRecipes(customRecipes = {}) {
+  const bundled = Object.entries(recipes).map(([id, r]) => ({
+    id,
+    label: r.label,
+    tagline: r.tagline,
+    category: r.category || 'build',
+    taskHint: r.taskHint,
+    placeholders: r.placeholders || ['task', 'context', 'constraints'],
+    source: 'bundled'
+  }));
+  const custom = Object.entries(customRecipes)
+    .filter(([id]) => !recipes[id])
+    .map(([id, r]) => ({
+      id,
+      label: r.label,
+      tagline: r.tagline,
+      category: r.category || 'build',
+      taskHint: r.taskHint,
+      placeholders: r.placeholders || ['task', 'context', 'constraints'],
+      source: 'custom'
+    }));
+  return [...bundled, ...custom];
 }
 
-function renderRecipe(name, config) {
-  const recipe = recipes[name];
+function renderRecipe(name, config = {}, customRecipes = {}) {
+  const recipe = getRecipe(name, customRecipes);
   if (!recipe) return null;
-  const task = config.task || '[DESCRIBE YOUR PROJECT HERE]';
-  const context = config.context ? `## Additional context\n${config.context}` : '';
-  const constraints = config.constraints || 'No additional constraints.';
-  return recipe.template
-    .replace(/\{\{task\}\}/g, task)
-    .replace(/\{\{context\}\}/g, context)
-    .replace(/\{\{constraints\}\}/g, constraints);
+  const variables = {
+    ...(config.variables && typeof config.variables === 'object' ? config.variables : {}),
+    task: config.task || '[DESCRIBE YOUR PROJECT HERE]',
+    context: config.context ? `## Additional context\n${config.context}` : '',
+    constraints: config.constraints || 'No additional constraints.'
+  };
+  return recipe.template.replace(/\{\{([a-z][a-z0-9_]*)\}\}/gi, (placeholder, name) =>
+    Object.prototype.hasOwnProperty.call(variables, name) ? String(variables[name]) : placeholder
+  );
 }
 
 function validateRecipes(recipeSet = recipes) {

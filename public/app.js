@@ -5,6 +5,14 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const CATEGORY_LABELS = {
+  build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)',
+  dfir: 'DFIR — Forensics & IR', 'reverse-eng': 'Reverse Engineering', malware: 'Malware Analysis',
+  aisec: 'AI / ML Security', redteam: 'Red Team Operations', blueteam: 'Blue Team / Detection',
+  cloudsec: 'Cloud Security', appsec: 'Application Security', osint: 'OSINT / Threat Intel',
+  crypto: 'Cryptography', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity',
+  'ai-ops': 'AI × Operations'
+};
 
 function getConfig() {
   const consult = $('consult').checked;
@@ -24,8 +32,17 @@ function getConfig() {
     model: $('model').value.trim(),
     apiKey: $('apiKey').value.trim(),
     apiBase: $('apiBase').value.trim(),
-    project: consult ? ($('project').value.trim() || undefined) : undefined
+    project: $('builderProject').value.trim() || $('project').value.trim() || undefined,
+    variables: getRecipeVariables()
   };
+}
+
+function getRecipeVariables() {
+  const variables = {};
+  document.querySelectorAll('[data-recipe-variable]').forEach((input) => {
+    if (input.value.trim()) variables[input.dataset.recipeVariable] = input.value.trim();
+  });
+  return variables;
 }
 
 function toggleLLMConfig() {
@@ -191,6 +208,7 @@ function replayPaper() {
 
 function clearInputs() {
   ['task', 'context', 'constraints'].forEach(id => { $(id).value = ''; });
+  document.querySelectorAll('[data-recipe-variable]').forEach(input => { input.value = ''; });
   $('task').focus();
   showToast('Inputs cleared.');
 }
@@ -338,10 +356,14 @@ function onRecipeChange() {
   if (!id || !state.meta) {
     tagline.textContent = '';
     task.placeholder = 'Full plan, rough idea, arrow lists \u2014 paste anything. Nothing gets dropped.';
+    renderRecipeVariables([]);
     return;
   }
   const r = state.meta.recipes.find(x => x.id === id);
-  if (r) tagline.textContent = r.tagline;
+  if (r) {
+    tagline.textContent = r.tagline;
+    renderRecipeVariables(r.placeholders || []);
+  }
   const hints = {
     'readme-driven': 'Describe the project: what it does, who it is for, key features...',
     'one-shot-game': 'Describe the game: genre, core mechanic, setting, win/lose condition...',
@@ -393,16 +415,141 @@ function onRecipeChange() {
     'sec-research-hunt': 'Describe the target to hunt: codebase, binary, firmware, config, scope, depth...',
     'sec-research-validate': 'Paste the claim to validate: CVE description, researcher writeup, exploit assertion...'
   };
-  if (hints[id]) task.placeholder = hints[id];
+  task.placeholder = (r && r.taskHint) || hints[id] || task.placeholder;
   task.focus();
 }
 
-async function loadMeta() {
+function renderRecipeVariables(placeholders) {
+  const variables = placeholders.filter(name => !['task', 'context', 'constraints'].includes(name));
+  const section = $('recipeVariables');
+  const fields = $('recipeVariableFields');
+  fields.innerHTML = '';
+  section.hidden = variables.length === 0;
+
+  for (const name of variables) {
+    const field = document.createElement('div');
+    field.className = 'field';
+    const label = document.createElement('label');
+    label.htmlFor = `recipeVariable-${name}`;
+    label.textContent = name.replace(/_/g, ' ');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = `recipeVariable-${name}`;
+    input.dataset.recipeVariable = name;
+    input.placeholder = `Value for {{${name}}}`;
+    field.append(label, input);
+    fields.appendChild(field);
+  }
+}
+
+function getBuilderDraft() {
+  return {
+    name: $('builderName').value.trim(),
+    category: $('builderCategory').value,
+    role: $('builderRole').value.trim(),
+    steps: $('builderSteps').value,
+    hardRules: $('builderRules').value,
+    outputFormat: $('builderOutput').value.trim(),
+    placeholders: $('builderPlaceholders').value.trim()
+  };
+}
+
+function getBuilderProject() {
+  return $('builderProject').value.trim() || undefined;
+}
+
+function renderBuilderCategories() {
+  const select = $('builderCategory');
+  const selected = select.value || 'build';
+  const categories = (state.meta && state.meta.recipeCategories) || CATEGORY_LABELS;
+  select.innerHTML = '';
+  for (const [id, label] of Object.entries(categories)) {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = label;
+    select.appendChild(option);
+  }
+  select.value = Object.prototype.hasOwnProperty.call(categories, selected) ? selected : 'build';
+}
+
+function toggleRecipeBuilder() {
+  const builder = $('recipeBuilder');
+  builder.hidden = !builder.hidden;
+  $('toggleRecipeBuilder').textContent = builder.hidden ? 'Build recipe' : 'Close builder';
+  if (!builder.hidden) {
+    renderBuilderCategories();
+    $('builderName').focus();
+  }
+}
+
+function showRecipePreview(recipe) {
+  const preview = $('builderPreview');
+  preview.textContent = recipe.template;
+  preview.hidden = false;
+}
+
+async function previewRecipe() {
+  const button = $('previewRecipeBtn');
+  button.disabled = true;
+  button.textContent = 'Building…';
   try {
-    const res = await fetch('/api/meta');
+    const res = await fetch('/api/recipes/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipe: getBuilderDraft() })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showRecipePreview(data.recipe);
+    showToast('Template previewed.');
+  } catch (err) {
+    showToast(err.message || 'Recipe preview failed.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Preview template';
+  }
+}
+
+async function saveRecipe() {
+  const button = $('saveRecipeBtn');
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  try {
+    const project = getBuilderProject();
+    const res = await fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recipe: getBuilderDraft(),
+        scope: $('builderScope').value,
+        project
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showRecipePreview(data.recipe);
+    await loadMeta(project);
+    $('recipe').value = data.recipe.id;
+    onRecipeChange();
+    setStatus(`Saved custom recipe ${data.recipe.id}`, 'ok');
+    showToast(`Saved ${data.recipe.id}.`);
+  } catch (err) {
+    showToast(err.message || 'Recipe save failed.', 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Save recipe';
+  }
+}
+
+async function loadMeta(project) {
+  try {
+    const selected = $('recipe').value;
+    const query = project ? `?${new URLSearchParams({ project }).toString()}` : '';
+    const res = await fetch(`/api/meta${query}`);
+    if (!res.ok) throw new Error('Unable to load recipe metadata.');
     state.meta = await res.json();
     const sel = $('recipe');
-    const catLabels = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', dfir: 'DFIR — Forensics & IR', 'reverse-eng': 'Reverse Engineering', malware: 'Malware Analysis', aisec: 'AI / ML Security', redteam: 'Red Team Operations', blueteam: 'Blue Team / Detection', cloudsec: 'Cloud Security', appsec: 'Application Security', osint: 'OSINT / Threat Intel', crypto: 'Cryptography', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
+    sel.innerHTML = '<option value="">None — freeform task</option>';
     const grouped = {};
     for (const r of state.meta.recipes) {
       const cat = r.category || 'build';
@@ -411,22 +558,29 @@ async function loadMeta() {
     }
     for (const [cat, items] of Object.entries(grouped)) {
       const og = document.createElement('optgroup');
-      og.label = catLabels[cat] || cat;
+      og.label = ((state.meta && state.meta.recipeCategories) || CATEGORY_LABELS)[cat] || cat;
       for (const r of items) {
         const opt = document.createElement('option');
         opt.value = r.id;
-        opt.textContent = r.label;
+        opt.textContent = r.source === 'custom' ? `${r.label} · custom` : r.label;
         og.appendChild(opt);
       }
       sel.appendChild(og);
     }
+    if ([...sel.options].some(option => option.value === selected)) sel.value = selected;
+    renderBuilderCategories();
     renderPlatformChips($('agent').value);
+    onRecipeChange();
   } catch { /* meta is optional — UI still works without it */ }
 }
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
 $('recipe').addEventListener('change', onRecipeChange);
+$('toggleRecipeBuilder').addEventListener('click', toggleRecipeBuilder);
+$('previewRecipeBtn').addEventListener('click', previewRecipe);
+$('saveRecipeBtn').addEventListener('click', saveRecipe);
 
+renderBuilderCategories();
 loadMeta();
 loadFromUrl();
 toggleLLMConfig();

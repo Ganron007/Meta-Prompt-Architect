@@ -9,4 +9,6 @@ internal/
 .env
 .env.local
 .prompt-history.json
+.mpa/
+.mpa-analytics.json
 

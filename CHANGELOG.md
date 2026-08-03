@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Custom Recipe Builder** (`src/custom-recipes.js`): define reusable prompt
+  patterns with role, workflow steps, hard rules, output format, and custom
+  placeholders. Saved recipes are validated (required fields, registered
+  category, `{{task}}` present, declared placeholders) and loaded alongside
+  bundled recipes in the CLI, web UI dropdown, and `/api/meta`.
+- `--create-recipe` CLI flag with `--recipe-name/-category/-role/-steps/
+  -rules/-output/-placeholders` options; saves to project-local
+  `.mpa/recipes/` (default) or `~/.mpa/recipes/` via `--recipe-scope user`.
+- `--vars <json>` supplies values for a custom recipe's extra placeholders;
+  values are stored in history and restored on `--history-replay`.
+- `--recipe-dir <dir>` and `--overwrite-recipe` for explicit recipe
+  directories and replacement.
+- Web UI recipe builder panel: form with live preview (`/api/recipes/preview`)
+  and save; recipe dropdown marks custom recipes; per-recipe input fields
+  appear for custom placeholders.
+
 ## [1.4.0] - 2026-08-03
 
 ### Added

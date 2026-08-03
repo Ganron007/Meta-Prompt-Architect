@@ -15,6 +15,8 @@ async function generate(config) {
     includeExamples = false,
     rewrite = false,
     recipe,
+    customRecipes = {},
+    variables = {},
     provider,
     model,
     apiKey,
@@ -34,12 +36,13 @@ async function generate(config) {
 
   const playbook = buildPlaybook(agent);
 
-  if (recipe && getRecipe(recipe)) {
+  if (recipe && getRecipe(recipe, customRecipes)) {
     const rendered = renderRecipe(recipe, {
       task: enhancedTask,
       context: enhancedContext,
-      constraints: enhancedConstraints
-    });
+      constraints: enhancedConstraints,
+      variables
+    }, customRecipes);
     return `${rendered}\n\n${playbook}`.trim();
   }
 

@@ -11,6 +11,7 @@ const { listRecipes, renderRecipe, getRecipe, validateRecipes } = require('../sr
 const { buildPlaybook, getPlatform } = require('../src/platforms');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('../src/history');
 const { scorePrompt, formatScore } = require('../src/scorer');
+const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('../src/custom-recipes');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -280,6 +281,55 @@ async function testScorer() {
   console.log('scorer: OK');
 }
 
+async function testCustomRecipes() {
+  const fs = require('fs');
+  const os = require('os');
+  const recipe = buildCustomRecipe({
+    name: 'Launch plan review',
+    category: 'build',
+    role: 'product launch lead',
+    steps: 'Plan the rollout|Verify gates|Decide go or no-go',
+    hardRules: 'State assumptions|Protect secrets',
+    outputFormat: 'Launch checklist with owners',
+    placeholders: 'audience,stack'
+  });
+  assert.strictEqual(recipe.id, 'launch-plan-review', 'id should be slugified name');
+  assert(recipe.template.includes('{{task}}'), 'template contains {{task}}');
+  assert(recipe.template.includes('{{audience}}'), 'template contains custom placeholder');
+  assert(recipe.placeholders.includes('audience') && recipe.placeholders.includes('task'), 'placeholders declared');
+  assert.throws(() => buildCustomRecipe({ name: 'x', category: 'build', role: 'r', steps: 's', hardRules: 'r', outputFormat: 'f', placeholders: 'Bad Name' }), /Invalid custom placeholder/, 'invalid placeholder name rejected');
+  assert.throws(() => buildCustomRecipe({ name: 'x', category: 'build', role: '', steps: 's', hardRules: 'r', outputFormat: 'f' }), /role/, 'missing role rejected');
+  assert.throws(() => buildCustomRecipe({ name: 'x', category: 'nope', role: 'r', steps: 's', hardRules: 'r', outputFormat: 'f' }), /unregistered category/, 'unregistered category rejected');
+  const bad = { id: 'bad', label: 'Bad', tagline: 't', category: 'build', template: 'no task placeholder', placeholders: ['task', 'context', 'constraints'] };
+  assert(!validateCustomRecipe(bad).valid, 'template without {{task}} invalid');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-recipes-'));
+  const saved = saveCustomRecipe(recipe, { recipeDir: dir });
+  assert(fs.existsSync(saved.filePath), 'recipe file written');
+  assert.throws(() => saveCustomRecipe(recipe, { recipeDir: dir }), /already exists/, 'duplicate save rejected without overwrite');
+  const loaded = loadCustomRecipes({ recipeDir: dir });
+  assert(loaded['launch-plan-review'], 'saved recipe loads back');
+
+  const rendered = renderRecipe('launch-plan-review', { task: 'Ship v2', context: '', constraints: 'No downtime', variables: { audience: 'execs', stack: 'node' } }, loaded);
+  assert(rendered.includes('Ship v2'), 'custom recipe interpolates task');
+  assert(rendered.includes('execs'), 'custom recipe interpolates custom variable');
+  assert(!rendered.includes('{{audience}}'), 'no leftover custom placeholders');
+  const listed = listRecipes(loaded);
+  const entry = listed.find(r => r.id === 'launch-plan-review');
+  assert(entry && entry.source === 'custom', 'custom recipe listed with source=custom');
+  assert(listed.filter(r => r.source === 'bundled').length >= 111, 'bundled recipes still listed');
+
+  const vars = parseVariables('{"audience":"execs"}');
+  assert.strictEqual(vars.audience, 'execs', 'parseVariables parses JSON object');
+  assert.throws(() => parseVariables('[1,2]'), /JSON object/, 'parseVariables rejects arrays');
+
+  const prompt = await generate({ agent: 'cursor', task: 'Ship v2', recipe: 'launch-plan-review', customRecipes: loaded, variables: { audience: 'execs', stack: 'node' } });
+  assert(prompt.includes('product launch lead'), 'generate uses custom recipe role');
+  assert(prompt.includes('Platform Playbook'), 'generate appends platform playbook to custom recipe');
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('custom recipes: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -298,6 +348,7 @@ async function main() {
   testHistory();
   await testBatchGeneration();
   await testScorer();
+  await testCustomRecipes();
   console.log('All tests passed.');
 }
 
