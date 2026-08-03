@@ -261,6 +261,7 @@ Synthesizes patterns from: LangGPT · Prompt Engineering Guide (dair-ai) · prom
 
 ## Documentation
 
+- [docs/usage-guide.md](docs/usage-guide.md) — task-oriented walkthrough of every feature with examples
 - [docs/recipe-authoring.md](docs/recipe-authoring.md) — how to write, validate, and share recipes
 - [docs/platform-authoring.md](docs/platform-authoring.md) — how to add platforms and playbooks
 - [docs/api.md](docs/api.md) — HTTP API reference for the web server

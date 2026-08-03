@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Web UI provider dropdown replaced by model + base URL + reasoning fields.
 
 ### Added
+- **Usage guide** (`docs/usage-guide.md`): task-oriented walkthrough of every
+  feature with copy-paste examples — grounding, loop contract, consult,
+  reasoning, recipes, chaining, scoring, testing, custom recipes, packs,
+  templatize, profiles, history/diff, review, export, piping, batch, i18n,
+  analytics, plugins, JSON output, and config precedence.
 - **Project Grounding (anti-generic prefill)**: template and recipe modes now
   auto-scan the project and inject a Project Grounding section into every
   prompt — root, git branch, trimmed structure, and detected verify commands
