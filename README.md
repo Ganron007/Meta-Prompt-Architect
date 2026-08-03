@@ -180,6 +180,8 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0â
 npm start    # http://localhost:3000
 ```
 
+![Meta-Prompt Architect web UI â€” drafting console with a forged DFIR recipe prompt](assets/web-ui.png)
+
 Full-viewport drafting console. Binds to `127.0.0.1` (set `HOST`/`PORT` to override).
 
 - Recipe dropdown with category grouping and task hints
