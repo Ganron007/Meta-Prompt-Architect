@@ -65,6 +65,8 @@ Options:
   --scanner <id>                                    Use a plugin scanner for project context
   --plugins                                         List loaded plugins and exit
   --plugin-dir <dir>                                Explicit plugin directory (default: .mpa/plugins + ~/.mpa/plugins)
+  --templatize <file|->                             Reverse-engineer an existing prompt into a recipe (- reads stdin)
+  --offline                                         Force rule-based fallback (no LLM) for --templatize
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
@@ -107,7 +109,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--offline', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -151,6 +153,8 @@ function parseArgs(argv) {
       case '--scanner': args.scanner = argv[++i]; break;
       case '--plugins': args.plugins = true; break;
       case '--plugin-dir': args.pluginDir = argv[++i]; break;
+      case '--templatize': args.templatize = argv[++i]; break;
+      case '--offline': args.offline = true; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
@@ -206,6 +210,41 @@ async function main() {
     });
     if (args.json) console.log(JSON.stringify(saved, null, 2));
     else console.log(`Custom recipe "${saved.recipe.id}" saved to ${saved.filePath}`);
+    return;
+  }
+
+  if (args.templatize) {
+    const { templatizePrompt } = require('./templatize');
+    let promptText;
+    if (args.templatize === '-') {
+      promptText = fs.readFileSync(0, 'utf8');
+    } else {
+      const filePath = path.resolve(args.templatize);
+      if (!fs.existsSync(filePath)) { console.error(`Prompt file not found: ${filePath}`); process.exit(1); }
+      promptText = fs.readFileSync(filePath, 'utf8');
+    }
+    let provider = null;
+    if (!args.offline) {
+      try { resolveLLM(args); provider = args.provider; }
+      catch { console.error('[templatize] no LLM available — using offline heuristic extraction.'); }
+    }
+    const recipe = await templatizePrompt(promptText, {
+      provider,
+      model: args.model,
+      apiKey: args.apiKey,
+      apiBase: args.apiBase,
+      fallbackModel: args.fallbackModel,
+      offline: args.offline || !provider,
+      name: args.recipeName,
+      category: args.recipeCategory
+    });
+    const saved = saveCustomRecipe(recipe, { scope: args.recipeScope || 'project', project: args.project || process.cwd(), recipeDir: args.recipeDir, overwrite: args.overwriteRecipe });
+    if (args.json) {
+      console.log(JSON.stringify({ recipe, saved: { directory: saved.directory, filePath: saved.filePath } }, null, 2));
+    } else {
+      console.log(`Recipe "${recipe.id}" extracted (${provider ? 'LLM' : 'offline heuristic'}) and saved to ${saved.filePath}`);
+      console.log(`Use it: prompt-architect --recipe ${recipe.id} --task "..."`);
+    }
     return;
   }
 

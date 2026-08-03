@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recipe templatize** (`src/templatize.js`): `--templatize <file|->`
+  reverse-engineers an existing prompt into a validated custom recipe —
+  LLM extraction (role, steps, hard rules, output format, placeholders) with
+  an offline heuristic fallback (no API key needed). The recipe is saved to
+  the recipe store and immediately usable via `--recipe`.
 - **Plugin system** (`src/plugins.js`): drop `.js` manifests into `.mpa/plugins/`
   or `~/.mpa/plugins/` to extend the tool with custom exporters (`--export
   <id>`), platforms (`--agent <id>` with a full playbook), enhancers

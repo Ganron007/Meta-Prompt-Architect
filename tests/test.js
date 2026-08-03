@@ -22,6 +22,7 @@ const { buildGistPayload } = require('../src/gist');
 const { editInEditor, confirmApproval, reviewPrompt } = require('../src/review');
 const { recordEvent, loadEvents, summarize: summarizeAnalytics, formatAnalytics } = require('../src/analytics');
 const { loadPlugins, validatePlugin, normalizePlatform } = require('../src/plugins');
+const { heuristicTemplatize, parseTemplatizeResponse, buildTemplatizeMessages, templatizePrompt } = require('../src/templatize');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -640,6 +641,39 @@ async function testPlugins() {
   console.log('plugins: OK');
 }
 
+async function testTemplatize() {
+  const sample = '# Role: Senior release engineer\n\n## Workflow\n1. Inventory the release surface and list every artifact.\n2. Verify each quality gate with concrete evidence.\n\n## Rules\n- Do not invent evidence.\n- Never skip unresolved blockers.\n\n## Output Format\nA prioritized checklist with owners.';
+  const draft = heuristicTemplatize(sample, { name: 'Release gate review' });
+  assert.strictEqual(draft.role, 'Senior release engineer', 'role extracted from heading');
+  assert.strictEqual(draft.steps.length, 2, 'steps extracted from numbered list');
+  assert(draft.steps[0].includes('Inventory the release surface'), 'step content preserved');
+  assert.deepStrictEqual(draft.hardRules, ['Do not invent evidence', 'Never skip unresolved blockers'], 'rules extracted');
+  assert(draft.outputFormat.includes('prioritized checklist'), 'output format extracted');
+
+  const withPlaceholders = 'You are a migration lead.\n\n1. Assess {{source_stack}} thoroughly.\n2. Plan the move to the target platform.\n\n- Never migrate without a backup.\n\n## Output\nA phased migration plan.';
+  const ph = heuristicTemplatize(withPlaceholders, { name: 'x' });
+  assert.deepStrictEqual(ph.placeholders, ['source_stack'], 'custom placeholders extracted');
+
+  assert.throws(() => heuristicTemplatize('just some prose with no structure at all', {}), /role|steps/, 'unstructured prompt rejected with guidance');
+
+  const parsed = parseTemplatizeResponse('{"label": "L", "tagline": "t", "role": "r", "steps": ["a"], "hardRules": ["b"], "outputFormat": "f", "placeholders": ["p"]}');
+  assert(parsed.label === 'L' && parsed.steps.length === 1, 'LLM response parsed');
+  const fenced = parseTemplatizeResponse('```json\n{"label": "L2", "steps": ["a", "b"]}\n```');
+  assert(fenced.label === 'L2' && fenced.hardRules.length === 1, 'fenced JSON parsed with defaults');
+  assert.throws(() => parseTemplatizeResponse('no json'), /no JSON object/, 'non-JSON rejected');
+  assert.throws(() => parseTemplatizeResponse('{"steps": []}'), /"label"|"steps"/, 'missing fields rejected');
+
+  const msgs = buildTemplatizeMessages('PROMPT', { name: 'N', category: 'build' });
+  assert(msgs.length === 2 && msgs[1].content.includes('PROMPT') && msgs[1].content.includes('N'), 'templatize messages built');
+
+  const recipe = await templatizePrompt(sample, { offline: true, name: 'Release gate review', category: 'build' });
+  assert.strictEqual(recipe.id, 'release-gate-review', 'offline templatize produces a valid recipe');
+  assert(recipe.template.includes('{{task}}'), 'recipe template valid');
+  const rendered = renderRecipe(recipe.id, { task: 'Ship v2', context: '', constraints: '' }, { [recipe.id]: recipe });
+  assert(rendered.includes('Ship v2') && rendered.includes('Senior release engineer'), 'extracted recipe renders');
+  console.log('templatize: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -668,6 +702,7 @@ async function main() {
   await testCollaboration();
   testAnalytics();
   await testPlugins();
+  await testTemplatize();
   console.log('All tests passed.');
 }
 
