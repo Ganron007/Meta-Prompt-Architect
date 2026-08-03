@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recipe packs** (`src/recipe-packs.js`): shareable pack format
+  (`mpa-recipe-pack` JSON with name, version, metadata, recipes).
+  `--export-pack <category|all>` writes a pack to `--out`; `--import-recipe
+  <url|file>` imports from a file, URL, or GitHub Gist (auto-normalized to raw)
+  into the recipe store with skip/overwrite handling. Imported recipes appear
+  in `--recipes`, the web UI dropdown, and `/api/meta`.
 - **Prompt chaining** (`src/chain.js`): `--chain id1,id2,...` links recipes into
   an ordered pipeline. Each step's prompt is wrapped in a Chain Context section
   with handoff-in/handoff-out instructions, context carryover rules (task,

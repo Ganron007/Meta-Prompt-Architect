@@ -7,6 +7,7 @@ const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes, recipeCategories, validateRecipes } = require('./recipes');
 const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('./custom-recipes');
 const { parseChain, buildChain, wrapChainStep } = require('./chain');
+const { exportPack, importPack } = require('./recipe-packs');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -52,6 +53,8 @@ Options:
   --recipe-scope <project|user>                    Save under .mpa/recipes or ~/.mpa/recipes (default: project)
   --recipe-dir <dir>                               Explicit custom recipe directory (load or save)
   --overwrite-recipe                               Replace an existing custom recipe file
+  --import-recipe <url|file>                       Import a recipe pack from a file, URL, or GitHub Gist
+  --export-pack <category|all>                     Export recipes as a shareable pack JSON (to --out)
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
   --name <filename>                               Output file name without extension
@@ -88,7 +91,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -123,6 +126,8 @@ function parseArgs(argv) {
       case '--recipe-scope': args.recipeScope = argv[++i]; break;
       case '--recipe-dir': args.recipeDir = argv[++i]; break;
       case '--overwrite-recipe': args.overwriteRecipe = true; break;
+      case '--import-recipe': args.importRecipe = argv[++i]; break;
+      case '--export-pack': args.exportPack = argv[++i]; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
@@ -179,6 +184,34 @@ async function main() {
     project: args.project || process.cwd(),
     recipeDir: args.recipeDir
   });
+
+  if (args.importRecipe) {
+    const result = await importPack(args.importRecipe, {
+      scope: args.recipeScope || 'project',
+      project: args.project || process.cwd(),
+      recipeDir: args.recipeDir,
+      overwrite: args.overwriteRecipe
+    });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`Imported ${result.imported.length} recipe(s) from pack "${result.pack.name}" into ${result.directory}`);
+      if (result.skipped.length) console.log(`Skipped ${result.skipped.length} existing: ${result.skipped.join(', ')} (use --overwrite-recipe to replace)`);
+    }
+    return;
+  }
+
+  if (args.exportPack) {
+    const pack = exportPack({ category: args.exportPack, customRecipes });
+    const outDir = path.resolve(args.out);
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+    const safeName = String(args.name && args.name !== 'generated-prompt' ? args.name : `mpa-pack-${args.exportPack}`).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = path.join(outDir, `${safeName}.json`);
+    fs.writeFileSync(filePath, `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
+    if (args.json) console.log(JSON.stringify(pack, null, 2));
+    else console.log(`Exported ${pack.recipes.length} recipe(s) to ${filePath}`);
+    return;
+  }
 
   if (args.validateRecipes) {
     const report = validateRecipes();

@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-19_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-20_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -39,6 +39,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
 | **Prompt Chaining** | `--chain id1,id2,...` links recipes into pipelines with handoff instructions, context carryover, and quality gates per step |
+| **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>` |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
 | **Direct Piping** | Send prompts straight to Cursor, Claude Code, or OpenCode CLI |
@@ -135,6 +136,8 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--validate-recipes` | Validate recipe fields, categories, and placeholders |
 | `--create-recipe` | Build + save a custom recipe (use `--recipe-name/-category/-role/-steps/-rules/-output/-placeholders`) |
 | `--recipe-scope` | Save custom recipes to `project` (`.mpa/recipes/`) or `user` (`~/.mpa/recipes/`) |
+| `--import-recipe` | Import a recipe pack from a file, URL, or GitHub Gist |
+| `--export-pack` | Export a category (or `all`) as a shareable recipe pack JSON |
 | `--vars` | JSON object with values for a custom recipe's extra placeholders |
 | `--json` | Machine-readable output |
 | `--serve` | Start web UI |
@@ -183,6 +186,7 @@ src/
 ├── recipes.js       # 111 one-shot recipes
 ├── custom-recipes.js # Custom recipe builder (build/validate/save/load)
 ├── chain.js         # Prompt chain handoffs + quality gates
+├── recipe-packs.js  # Recipe pack import/export (file, URL, Gist)
 ├── scorer.js        # Prompt quality rubric scorer
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent CLI piping

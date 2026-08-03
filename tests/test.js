@@ -13,6 +13,7 @@ const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require(
 const { scorePrompt, formatScore } = require('../src/scorer');
 const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('../src/custom-recipes');
 const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src/chain');
+const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource } = require('../src/recipe-packs');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -365,6 +366,48 @@ async function testChaining() {
   console.log('chaining: OK');
 }
 
+async function testRecipePacks() {
+  const fs = require('fs');
+  const os = require('os');
+  assert(!isUrl('pack.json') && isUrl('https://example.com/pack.json'), 'isUrl detects URLs');
+  const gist = normalizeSource('https://gist.github.com/octocat/aa5a315d61ae9438b18d');
+  assert(gist === 'https://gist.githubusercontent.com/octocat/aa5a315d61ae9438b18d/raw', `gist URL normalized to raw, got ${gist}`);
+  assert.strictEqual(normalizeSource('plain-file.json'), 'plain-file.json', 'file source unchanged');
+
+  const pack = exportPack({ category: 'crypto' });
+  assert.strictEqual(pack.format, 'mpa-recipe-pack', 'pack has format marker');
+  assert.strictEqual(pack.recipes.length, 3, 'crypto pack has 3 recipes');
+  assert(pack.recipes.every(r => r.id && Array.isArray(r.placeholders)), 'exported recipes carry id + placeholders');
+  assert(validatePack(pack).valid, 'exported pack passes validation');
+  assert.throws(() => exportPack({ category: 'nope' }), /No recipes in category/, 'unknown category rejected');
+  const all = exportPack({ category: 'all' });
+  assert(all.recipes.length >= 111, 'all pack exports the full book');
+  assert(!validatePack({ format: 'mpa-recipe-pack', name: 'x', recipes: [{ id: 'bad' }] }).valid, 'invalid recipe in pack rejected');
+  assert.throws(() => buildPack({ name: 'x', recipes: [] }), /at least one recipe/, 'empty pack rejected');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-pack-'));
+  const store = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-store-'));
+  const file = path.join(dir, 'pack.json');
+  fs.writeFileSync(file, JSON.stringify(pack, null, 2));
+  const first = await importPack(file, { recipeDir: store });
+  assert.strictEqual(first.imported.length, 3, 'first import saves 3 recipes');
+  const second = await importPack(file, { recipeDir: store });
+  assert.strictEqual(second.imported.length, 0, 're-import skips existing');
+  assert.strictEqual(second.skipped.length, 3, 'skipped ids reported');
+  const third = await importPack(file, { recipeDir: store, overwrite: true });
+  assert.strictEqual(third.imported.length, 3, 'overwrite re-imports');
+  const loaded = loadCustomRecipes({ recipeDir: store });
+  assert(loaded['crypto-pqc-migration'], 'imported recipes load from store');
+  const rendered = renderRecipe('crypto-pqc-migration', { task: 'PQC audit', context: '', constraints: '' }, loaded);
+  assert(rendered.includes('PQC audit'), 'imported recipe renders');
+  const badFile = path.join(dir, 'bad.json');
+  fs.writeFileSync(badFile, '{"format":"mpa-recipe-pack","name":"x","recipes":[{"id":"bad"}]}');
+  await assert.rejects(() => importPack(badFile, { recipeDir: store }), /Invalid recipe pack/, 'invalid pack rejected');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.rmSync(store, { recursive: true, force: true });
+  console.log('recipe packs: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -385,6 +428,7 @@ async function main() {
   await testScorer();
   await testCustomRecipes();
   await testChaining();
+  await testRecipePacks();
   console.log('All tests passed.');
 }
 
