@@ -29,6 +29,8 @@
 
 Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code**, **OpenCode**, **DeepSeek**, **Kimi**, **GPT**, **Windsurf**, **Cline/Roo Code**, and generic agents. Every prompt includes a Platform Playbook that tells the agent how to exploit its own capabilities.
 
+![Meta-Prompt Architect web UI — drafting console with a forged DFIR recipe prompt](assets/web-ui.png)
+
 ## Features
 
 | | |
@@ -179,8 +181,6 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 ```bash
 npm start    # http://localhost:3000
 ```
-
-![Meta-Prompt Architect web UI — drafting console with a forged DFIR recipe prompt](assets/web-ui.png)
 
 Full-viewport drafting console. Binds to `127.0.0.1` (set `HOST`/`PORT` to override).
 
