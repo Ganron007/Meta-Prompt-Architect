@@ -6,6 +6,7 @@ const { exportPrompt } = require('./exporters');
 const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes } = require('./recipes');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
+const { scorePrompt, formatScore } = require('./scorer');
 
 function printUsage() {
   console.log(`
@@ -41,6 +42,7 @@ Options:
   --name <filename>                               Output file name without extension
   --out <dir>                                       Output directory (default: ./out)
   --json                                            Machine-readable JSON output
+  --score                                           Score prompt quality (6-dimension rubric)
   --scan                                            Print the scanned project context and exit
   --history                                         List prompt history
   --history-get <id>                                Show a specific prompt from history
@@ -67,7 +69,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--pipe', '--export', '--name', '--out', '--json', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--pipe', '--export', '--name', '--out', '--json', '--score', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -99,6 +101,7 @@ function parseArgs(argv) {
       case '--name': args.name = argv[++i]; break;
       case '--out': args.out = argv[++i]; break;
       case '--json': args.json = true; break;
+      case '--score': args.score = true; break;
       case '--scan': args.scan = true; break;
       case '--history': args.history = true; break;
       case '--history-get': args.historyGet = argv[++i]; break;
@@ -218,7 +221,7 @@ async function main() {
       prompt = await generate(agentArgs);
     }
 
-    results.push({ agent, mode, prompt });
+    results.push({ agent, mode, prompt, score: args.score ? scorePrompt(prompt, { agent }) : null });
   }
 
   for (const { agent, mode, prompt } of results) {
@@ -247,10 +250,10 @@ async function main() {
 
   if (args.json) {
     if (results.length === 1) {
-      const { agent, mode, prompt } = results[0];
-      console.log(JSON.stringify({ mode, prompt, agent, domain: args.domain }, null, 2));
+      const { agent, mode, prompt, score } = results[0];
+      console.log(JSON.stringify({ mode, prompt, agent, domain: args.domain, ...(score ? { score } : {}) }, null, 2));
     } else {
-      console.log(JSON.stringify(results.map(r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain })), null, 2));
+      console.log(JSON.stringify(results.map(r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain, ...(r.score ? { score: r.score } : {}) })), null, 2));
     }
   } else {
     if (results.length === 1) {
@@ -261,6 +264,9 @@ async function main() {
         console.log(`\n=== ${agent.toUpperCase()} ===\n`);
         console.log(prompt);
       }
+    }
+    for (const { agent, score } of results) {
+      if (score) console.error(`${results.length > 1 ? `[${agent}] ` : ''}${formatScore(score)}`);
     }
   }
 }

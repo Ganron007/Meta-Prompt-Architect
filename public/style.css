@@ -609,6 +609,24 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
 
 .output-meta.live { color: var(--teal); }
 
+.score-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  cursor: help;
+  white-space: pre-line;
+}
+
+.score-chip.grade-a { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 45%, transparent); }
+.score-chip.grade-b { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 30%, transparent); }
+.score-chip.grade-c { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 40%, transparent); }
+.score-chip.grade-d { color: var(--amber-deep); border-color: color-mix(in srgb, var(--amber-deep) 40%, transparent); }
+.score-chip.grade-f { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
+
 .toolbar { display: flex; align-items: center; gap: 8px; }
 
 .paper-wrap {

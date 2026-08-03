@@ -8,6 +8,7 @@ const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes } = require('./recipes');
 const { platforms } = require('./platforms');
 const { listHistory, getHistoryEntry } = require('./history');
+const { scorePrompt } = require('./scorer');
 
 loadEnvChain();
 
@@ -21,10 +22,10 @@ app.post('/api/generate', async (req, res) => {
     if (cfg.consult) {
       resolveLLM(cfg);
       const result = await consultArchitect(cfg);
-      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned });
+      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score: scorePrompt(result.prompt, { agent: cfg.agent }) });
     }
     const prompt = await generate(cfg);
-    res.json({ prompt, mode: 'template' });
+    res.json({ prompt, mode: 'template', score: scorePrompt(prompt, { agent: cfg.agent }) });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

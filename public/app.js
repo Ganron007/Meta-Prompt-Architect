@@ -103,6 +103,16 @@ async function generate() {
     meta.textContent = `${wordCount(data.prompt)} words \u00b7 ${data.mode}`;
     meta.classList.add('live');
 
+    const chip = $('scoreChip');
+    if (data.score) {
+      chip.hidden = false;
+      chip.textContent = `${data.score.grade} \u00b7 ${data.score.percent}%`;
+      chip.className = 'score-chip grade-' + data.score.grade.toLowerCase();
+      chip.title = data.score.dimensions.map(d => `${d.label}: ${d.score}/10`).join('\n');
+    } else {
+      chip.hidden = true;
+    }
+
     if (data.mode === 'consult' && data.scanned) {
       setStatus(`Forged via consult \u2014 grounded in ${data.scanned.files.length} files @ ${data.scanned.root}`, 'ok');
     } else if (data.mode === 'consult') {
@@ -195,6 +205,7 @@ function clearOutput() {
   const meta = $('outputMeta');
   meta.textContent = 'awaiting input';
   meta.classList.remove('live');
+  $('scoreChip').hidden = true;
   setStatus('Ready. Template engine runs offline; flip on Consult for LLM-authored prompts.', '');
   showToast('Output cleared.');
 }

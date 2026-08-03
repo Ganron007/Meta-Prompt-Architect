@@ -10,6 +10,7 @@ const { loadEnv, resolveLLM } = require('../src/config');
 const { listRecipes, renderRecipe, getRecipe } = require('../src/recipes');
 const { buildPlaybook, getPlatform } = require('../src/platforms');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('../src/history');
+const { scorePrompt, formatScore } = require('../src/scorer');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -238,6 +239,29 @@ async function testBatchGeneration() {
   console.log('batch generation: OK');
 }
 
+async function testScorer() {
+  const good = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling', context: 'RAG script', constraints: 'No hardcoded secrets' });
+  const goodScore = scorePrompt(good, { agent: 'cursor' });
+  assert.strictEqual(goodScore.dimensions.length, 6, 'should score 6 dimensions');
+  assert.strictEqual(goodScore.maxTotal, 60, 'max total is 60');
+  for (const d of goodScore.dimensions) {
+    assert(d.score >= 1 && d.score <= 10, `${d.id} score within 1-10`);
+    assert(d.label && Array.isArray(d.findings), 'dimension has label and findings');
+  }
+  const junkScore = scorePrompt('do something good with the code and make it nice', {});
+  assert(goodScore.total > junkScore.total, `template prompt (${goodScore.total}) should outscore junk (${junkScore.total})`);
+  assert(junkScore.grade === 'F' || junkScore.grade === 'D', 'junk should grade poorly');
+  const withPlaceholders = scorePrompt('# Role: X\n\nDo {{task}} with {{context}} now.', {});
+  const comp = withPlaceholders.dimensions.find(d => d.id === 'completeness');
+  assert(comp.score <= 4, `leftover placeholders should tank completeness, got ${comp.score}`);
+  const recipe = await generate({ agent: 'claude', task: 'Analyze RAM dump', recipe: 'dfir-memory-forensics' });
+  const recipeScore = scorePrompt(recipe, { agent: 'claude' });
+  assert(recipeScore.percent >= 60, `recipe prompt should score at least 60%, got ${recipeScore.percent}%`);
+  const formatted = formatScore(goodScore);
+  assert(formatted.includes('Prompt Quality') && formatted.includes('Grade'), 'formatScore renders summary');
+  console.log('scorer: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -255,6 +279,7 @@ async function main() {
   testNewExporters();
   testHistory();
   await testBatchGeneration();
+  await testScorer();
   console.log('All tests passed.');
 }
 
