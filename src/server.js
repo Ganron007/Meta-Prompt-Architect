@@ -11,6 +11,7 @@ const { platforms } = require('./platforms');
 const { listHistory, getHistoryEntry } = require('./history');
 const { scorePrompt } = require('./scorer');
 const { diffLines, summarizeDiff, configChanges } = require('./diff');
+const { recordEvent, loadEvents, summarize: summarizeAnalytics } = require('./analytics');
 
 loadEnvChain();
 
@@ -29,10 +30,14 @@ app.post('/api/generate', async (req, res) => {
     if (cfg.consult) {
       resolveLLM(cfg);
       const result = await consultArchitect(cfg);
-      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score: scorePrompt(result.prompt, { agent: cfg.agent }) });
+      const score = scorePrompt(result.prompt, { agent: cfg.agent });
+      recordEvent('generate', { agent: cfg.agent, mode: 'consult', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
+      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score });
     }
     const prompt = await generate(cfg);
-    res.json({ prompt, mode: 'template', score: scorePrompt(prompt, { agent: cfg.agent }) });
+    const score = scorePrompt(prompt, { agent: cfg.agent });
+    recordEvent('generate', { agent: cfg.agent, mode: 'template', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
+    res.json({ prompt, mode: 'template', score });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -56,6 +61,7 @@ app.post('/api/export', async (req, res) => {
       prompt = await generate(cfg);
     }
     const result = exportPrompt(prompt, format, name);
+    recordEvent('export', { format, agent: config.agent });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -106,8 +112,11 @@ app.post('/api/scan', (req, res) => {
   }
 });
 
-app.get('/api/history', (req, res) => {
-  const entries = listHistory({ search: req.query.search, limit: parseInt(req.query.limit) || 50 });
+app.get('/api/analytics', (req, res) => {
+  res.json(summarizeAnalytics(loadEvents()));
+});
+
+app.get('/api/history', (req, res) => {  const entries = listHistory({ search: req.query.search, limit: parseInt(req.query.limit) || 50 });
   res.json(entries);
 });
 

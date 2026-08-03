@@ -20,6 +20,7 @@ const { pipeToAgent, pipeToWindsurf, pipeToContinue, pipeToCody, pipeToCopilot, 
 const { evaluateResponse, checkFormatCompliance, buildJudgeMessages, parseJudgeResponse, formatTestReport } = require('../src/prompt-test');
 const { buildGistPayload } = require('../src/gist');
 const { editInEditor, confirmApproval, reviewPrompt } = require('../src/review');
+const { recordEvent, loadEvents, summarize: summarizeAnalytics, formatAnalytics } = require('../src/analytics');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -566,6 +567,38 @@ async function testCollaboration() {
   console.log('collaboration: OK');
 }
 
+function testAnalytics() {
+  const fs = require('fs');
+  const os = require('os');
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-analytics-')), 'analytics.json');
+  recordEvent('generate', { agent: 'cursor', mode: 'template', domain: 'security', recipe: 'one-shot-game', scorePercent: 80 }, file);
+  recordEvent('generate', { agent: 'cursor', mode: 'template', domain: 'build', recipe: null }, file);
+  recordEvent('generate', { agent: 'claude', mode: 'consult', domain: 'security', scorePercent: 60 }, file);
+  recordEvent('export', { format: 'cursorrules', agent: 'cursor' }, file);
+  recordEvent('test', { agent: 'cursor', verdict: 'pass' }, file);
+
+  const events = loadEvents(file);
+  assert.strictEqual(events.length, 5, 'events recorded and reloaded');
+  const s = summarizeAnalytics(events);
+  assert.strictEqual(s.generated, 3, 'generate events counted');
+  assert.strictEqual(s.byAgent[0].value, 'cursor', 'cursor most used');
+  assert.strictEqual(s.byAgent[0].count, 2, 'cursor count 2');
+  assert.strictEqual(s.byRecipe[0].value, 'one-shot-game', 'recipe tracked');
+  assert.strictEqual(s.byExportFormat[0].value, 'cursorrules', 'export format tracked');
+  assert.deepStrictEqual(s.tests, { total: 1, passed: 1 }, 'test pass rate');
+  assert.strictEqual(s.quality.scoredPrompts, 2, 'scored prompts counted');
+  assert.strictEqual(s.quality.avgPercent, 70, 'avg quality (80+60)/2');
+  assert.strictEqual(s.quality.overTime.length, 1, 'quality trend grouped by day');
+
+  const rendered = formatAnalytics(s);
+  assert(rendered.includes('cursor') && rendered.includes('avg 70%'), 'formatAnalytics renders');
+  const empty = summarizeAnalytics([]);
+  assert.strictEqual(empty.quality.avgPercent, null, 'empty summary has null avg');
+  assert.strictEqual(loadEvents(path.join(os.tmpdir(), 'nope-does-not-exist.json')).length, 0, 'missing file yields no events');
+  fs.rmSync(path.dirname(file), { recursive: true, force: true });
+  console.log('analytics: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -592,6 +625,7 @@ async function main() {
   testPiping();
   testPromptTesting();
   await testCollaboration();
+  testAnalytics();
   console.log('All tests passed.');
 }
 

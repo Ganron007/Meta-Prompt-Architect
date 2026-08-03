@@ -301,6 +301,7 @@
             <button id="copyBtn" class="btn-ghost">Copy</button>
             <button id="shareBtn" class="btn-ghost" title="Copy shareable URL">Share</button>
             <button id="historyBtn" class="btn-ghost" title="Browse history and diff versions">History</button>
+            <button id="statsBtn" class="btn-ghost" title="Usage analytics dashboard">Stats</button>
             <button id="clearOutputBtn" class="btn-ghost" title="Clear the generated prompt">Clear</button>
           </div>
         </div>
@@ -337,6 +338,16 @@ ready to copy straight into your agent.</pre>
       </div>
       <div id="configChanges" class="config-changes"></div>
       <div id="diffView" class="diff-view scroll" hidden></div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-label="Usage analytics">
+      <div class="modal-head">
+        <h3>Usage analytics</h3>
+        <button id="statsClose" class="btn-ghost" title="Close">✕</button>
+      </div>
+      <div id="statsBody" class="stats-body scroll"></div>
     </div>
   </div>
 

@@ -9,6 +9,7 @@ const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables }
 const { parseChain, buildChain, wrapChainStep } = require('./chain');
 const { exportPack, importPack } = require('./recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, configChanges } = require('./diff');
+const { recordEvent, loadEvents, summarize, formatAnalytics } = require('./analytics');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -70,6 +71,7 @@ Options:
   --expect <csv>                                    Keywords the test response must contain
   --no-judge                                        Skip the LLM-as-judge scoring pass in --test
   --show-response                                   Print the raw test response
+  --analytics                                       Show usage analytics summary and exit
   --scan                                            Print the scanned project context and exit
   --history                                         List prompt history
   --history-get <id>                                Show a specific prompt from history
@@ -100,7 +102,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -155,6 +157,7 @@ function parseArgs(argv) {
       case '--expect': args.expect = argv[++i]; break;
       case '--no-judge': args.noJudge = true; break;
       case '--show-response': args.showResponse = true; break;
+      case '--analytics': args.analytics = true; break;
       case '--validate-recipes': args.validateRecipes = true; break;
       case '--scan': args.scan = true; break;
       case '--history': args.history = true; break;
@@ -344,11 +347,18 @@ async function main() {
     console.error(`[history] replaying entry ${entry.id.slice(-6)} — ${entry.task.slice(0, 50)}`);
   }
 
+  if (args.analytics) {
+    const summary = summarize(loadEvents());
+    if (args.json) console.log(JSON.stringify(summary, null, 2));
+    else console.log(formatAnalytics(summary));
+    return;
+  }
+
   if (args.scan) {
-    const { scanProject, summarize } = require('./context');
+    const { scanProject, summarize: summarizeScan } = require('./context');
     const scan = scanProject(args.project || process.cwd());
     if (args.json) console.log(JSON.stringify(scan, null, 2));
-    else console.log(summarize(scan));
+    else console.log(summarizeScan(scan));
     return;
   }
 
@@ -410,8 +420,9 @@ async function main() {
     }
   }
 
-  for (const { agent, mode, prompt, chainStep } of results) {
+  for (const { agent, mode, prompt, chainStep, score } of results) {
     addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, lang: args.lang, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
+    recordEvent('generate', { agent, mode, domain: args.domain, recipe: chainStep ? chainStep.id : args.recipe || null, scorePercent: score ? score.percent : undefined });
   }
 
   if (args.test) {
@@ -436,6 +447,7 @@ async function main() {
             criteria,
             judge: !args.noJudge
           });
+          recordEvent('test', { agent: result.agent, verdict: result.testResult.verdict });
           if (!args.json) console.error(`${results.length > 1 ? `[${result.agent}] ` : ''}${formatTestReport(result.testResult, { showResponse: args.showResponse })}`);
         } catch (err) {
           result.testResult = { verdict: 'error', error: err.message };
@@ -464,6 +476,7 @@ async function main() {
         : '';
       const filePath = path.join(outDir, `${safeName}${suffix}${ext}`);
       fs.writeFileSync(filePath, content, 'utf-8');
+      recordEvent('export', { format: args.export, agent });
       if (!args.json) console.log(`Generated ${args.export} file: ${filePath}`);
     }
   }

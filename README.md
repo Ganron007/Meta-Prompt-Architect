@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-25_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-26_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -42,6 +42,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Prompt Chaining** | `--chain id1,id2,...` links recipes into pipelines with handoff instructions, context carryover, and quality gates per step |
 | **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>`; `--share-pack` publishes to a GitHub Gist |
 | **Review Workflow** | `--review` opens the prompt in `$EDITOR` for edit + approval before it is exported, piped, or saved to history |
+| **Analytics** | Local usage tracking with `--analytics` summary and a web UI dashboard (top agents/recipes, quality trend, test pass rate) |
 | **Multi-Language** | `--lang es|ja|zh` translates template scaffolding while keeping user content and technical terms intact |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
@@ -154,6 +155,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--review` | Edit + approve the prompt in `$EDITOR` before export/pipe/history |
 | `--vars` | JSON object with values for a custom recipe's extra placeholders |
 | `--json` | Machine-readable output |
+| `--analytics` | Usage analytics summary (top agents, recipes, quality trend) |
 | `--serve` | Start web UI |
 
 </details>
@@ -207,6 +209,7 @@ src/
 ├── prompt-test.js   # LLM response evaluator + judge
 ├── gist.js          # Publish recipe packs to GitHub Gist
 ├── review.js        # $EDITOR review + approval gate
+├── analytics.js     # Local usage analytics + summary
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent piping (8 targets)
 ├── llm.js           # Multi-provider LLM client

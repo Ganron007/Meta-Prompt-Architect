@@ -389,6 +389,47 @@ async function runDiff() {
   }
 }
 
+async function openStats() {
+  const modal = $('statsModal');
+  modal.hidden = false;
+  const body = $('statsBody');
+  body.innerHTML = '<p class="modal-hint">Loading…</p>';
+  try {
+    const res = await fetch('/api/analytics');
+    const s = await res.json();
+    body.innerHTML = '';
+    const totals = document.createElement('div');
+    totals.className = 'stats-totals';
+    totals.innerHTML = `<span class="chip">${s.generated} prompts</span> <span class="chip">${s.tests.passed}/${s.tests.total} tests passed</span>` + (s.quality.avgPercent !== null ? ` <span class="chip amber">avg quality ${s.quality.avgPercent}%</span>` : '');
+    body.appendChild(totals);
+    const section = (title, items) => {
+      if (!items || !items.length) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'stats-section';
+      const max = Math.max(...items.map(i => i.count));
+      wrap.innerHTML = `<h4>${title}</h4>` + items.map(i =>
+        `<div class="stat-row"><span class="stat-label">${i.value}</span><span class="stat-bar"><span class="stat-fill" style="width:${Math.round((i.count / max) * 100)}%"></span></span><span class="stat-count">${i.count}</span></div>`
+      ).join('');
+      body.appendChild(wrap);
+    };
+    section('Agents', s.byAgent);
+    section('Modes', s.byMode);
+    section('Top recipes', s.byRecipe);
+    section('Export formats', s.byExportFormat);
+    if (s.quality.overTime.length) {
+      const trend = document.createElement('div');
+      trend.className = 'stats-section';
+      trend.innerHTML = '<h4>Quality over time</h4>' + s.quality.overTime.slice(-10).map(p =>
+        `<div class="stat-row"><span class="stat-label">${p.day}</span><span class="stat-bar"><span class="stat-fill quality" style="width:${p.avgPercent}%"></span></span><span class="stat-count">${p.avgPercent}%</span></div>`
+      ).join('');
+      body.appendChild(trend);
+    }
+    if (!s.totalEvents) body.innerHTML = '<p class="modal-hint">No analytics yet — events are recorded as you forge, test, and export prompts.</p>';
+  } catch (err) {
+    body.innerHTML = `<p class="modal-hint">Failed to load analytics: ${err.message}</p>`;
+  }
+}
+
 $('generateBtn').addEventListener('click', generate);
 $('exportBtn').addEventListener('click', exportFile);
 $('copyBtn').addEventListener('click', copyToClipboard);
@@ -396,6 +437,8 @@ $('shareBtn').addEventListener('click', shareUrl);
 $('historyBtn').addEventListener('click', openHistory);
 $('historyClose').addEventListener('click', () => { $('historyModal').hidden = true; });
 $('diffBtn').addEventListener('click', runDiff);
+$('statsBtn').addEventListener('click', openStats);
+$('statsClose').addEventListener('click', () => { $('statsModal').hidden = true; });
 $('clearInputsBtn').addEventListener('click', clearInputs);
 $('clearOutputBtn').addEventListener('click', clearOutput);
 $('rewrite').addEventListener('change', toggleLLMConfig);

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Usage analytics** (`src/analytics.js`): generation, test, and export events
+  recorded locally (`.mpa-analytics.json`, capped at 1000). `--analytics`
+  prints a summary (top agents, modes, recipes, export formats, test pass
+  rate, quality trend); `GET /api/analytics` serves it; the web UI Stats
+  button opens a dashboard modal with bar charts.
 - **Collaborative features**: `--share-pack <category|all>` publishes a recipe
   pack to a GitHub Gist (`GITHUB_TOKEN`/`GH_TOKEN`); the URL imports directly
   via `--import-recipe`. `--review` opens the generated prompt in `$EDITOR`
