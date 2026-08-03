@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Authoring docs** (`docs/`): recipe authoring guide (shape, placeholders,
+  categories, quality bar, testing), platform playbook authoring guide, and a
+  full HTTP API reference covering all 12 endpoints.
 - **Integration sweep test**: every bundled recipe renders with zero leftover
   `{{placeholders}}`, all 10 export formats produce valid output (JSON formats
   parse), all 9 agents get a platform playbook, and batch generation yields

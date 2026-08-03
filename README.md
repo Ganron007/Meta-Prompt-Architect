@@ -234,6 +234,12 @@ src/
 
 Synthesizes patterns from: LangGPT · Prompt Engineering Guide (dair-ai) · prompts.chat · Promptfoo · Microsoft Promptbase · GPTs leaked prompts
 
+## Documentation
+
+- [docs/recipe-authoring.md](docs/recipe-authoring.md) — how to write, validate, and share recipes
+- [docs/platform-authoring.md](docs/platform-authoring.md) — how to add platforms and playbooks
+- [docs/api.md](docs/api.md) — HTTP API reference for the web server
+
 ---
 
 <p align="center">
