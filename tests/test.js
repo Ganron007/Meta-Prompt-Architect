@@ -15,6 +15,7 @@ const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRec
 const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src/chain');
 const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource } = require('../src/recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } = require('../src/diff');
+const { getStrings, resolveLang, SUPPORTED_LANGS } = require('../src/i18n');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -440,6 +441,36 @@ async function testDiff() {
   console.log('diff: OK');
 }
 
+async function testI18n() {
+  assert.strictEqual(resolveLang('es-ES'), 'es', 'locale code normalized');
+  assert.strictEqual(resolveLang('xx'), 'en', 'unknown language falls back to English');
+  assert(SUPPORTED_LANGS.includes('ja') && SUPPORTED_LANGS.includes('zh'), 'ja and zh supported');
+  for (const lang of SUPPORTED_LANGS) {
+    const t = getStrings(lang);
+    assert(t.contextHeading.startsWith('## '), `${lang} has context heading`);
+    assert(typeof t.roleLine === 'function' && t.roleLine('A', 'B').includes('A'), `${lang} roleLine works`);
+    assert(t.objectiveSteps('task', 'markdown').length === 3, `${lang} objective steps`);
+    assert(Object.keys(t.outputSpecs).length === 6, `${lang} has all output specs`);
+  }
+
+  const es = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling', lang: 'es' });
+  assert(es.includes('Rol: Senior IDE Pair Programmer especializado en Security Review & Hardening'), 'es role line');
+  assert(es.includes('## Contexto y restricciones'), 'es context heading');
+  assert(es.includes('## Objetivo'), 'es objective heading');
+  assert(es.includes('Review API key handling'), 'user task stays verbatim');
+  assert(es.includes('Platform Playbook'), 'playbook stays English');
+  const ja = await generate({ agent: 'claude', task: '認証モジュールをレビュー', lang: 'ja' });
+  assert(ja.includes('ロール:'), 'ja role line');
+  assert(ja.includes('認証モジュールをレビュー'), 'ja task verbatim');
+  assert(ja.includes('## 目的'), 'ja objective heading');
+  const zh = await generate({ agent: 'gpt', task: 'test', lang: 'zh', outputFormat: 'json' });
+  assert(zh.includes('## 输出格式'), 'zh output heading');
+  assert(zh.includes('JSON 对象'), 'zh json spec translated');
+  const en = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling' });
+  assert(en.includes('# Role: Senior IDE Pair Programmer specializing in Security Review & Hardening'), 'default English unchanged');
+  console.log('i18n: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -462,6 +493,7 @@ async function main() {
   await testChaining();
   await testRecipePacks();
   await testDiff();
+  await testI18n();
   console.log('All tests passed.');
 }
 

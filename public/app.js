@@ -24,6 +24,7 @@ function getConfig() {
     constraints: $('constraints').value.trim(),
     outputFormat: $('outputFormat').value,
     tone: $('tone').value,
+    lang: $('lang').value,
     includeExamples: $('includeExamples').checked,
     consult,
     rewrite: $('rewrite').checked,

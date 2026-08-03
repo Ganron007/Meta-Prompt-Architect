@@ -33,6 +33,7 @@ Options:
   --no-project                                      Skip project scanning
   --format <markdown|json|table|code|diagram|text>  Desired prompt output format
   --tone <professional|casual|strict>               Tone (default: professional)
+  --lang <en|es|ja|zh>                              Language for template scaffolding (default: en)
   --examples                                        Include examples
   --rewrite                                         Rule/LLM-polish raw input before templating
   --consult                                         The Architect LLM authors the prompt itself
@@ -93,7 +94,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -111,6 +112,7 @@ function parseArgs(argv) {
       case '--no-project': args.project = false; break;
       case '--format': args.outputFormat = argv[++i]; break;
       case '--tone': args.tone = argv[++i]; break;
+      case '--lang': args.lang = argv[++i]; break;
       case '--examples': args.includeExamples = true; break;
       case '--rewrite': args.rewrite = true; break;
       case '--consult': args.consult = true; break;
@@ -308,6 +310,7 @@ async function main() {
     args.constraints = entry.constraints;
     args.outputFormat = entry.outputFormat;
     args.tone = entry.tone;
+    args.lang = entry.lang;
     args.includeExamples = entry.includeExamples;
     args.recipe = entry.recipe;
     args.variables = entry.variables;
@@ -371,7 +374,7 @@ async function main() {
   }
 
   for (const { agent, mode, prompt, chainStep } of results) {
-    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
+    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, lang: args.lang, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
   }
 
   if (args.pipe) {

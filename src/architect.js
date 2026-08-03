@@ -56,6 +56,7 @@ The generated prompt MUST include a "Platform Playbook" section exploiting these
   if (config.constraints) parts.push(`\n## Hard constraints from user\n${config.constraints}`);
   if (config.outputFormat) parts.push(`\n## Desired output format\n${config.outputFormat}`);
   if (config.tone) parts.push(`\n## Desired tone\n${config.tone}`);
+  if (config.lang && config.lang !== 'en') parts.push(`\n## Output language\nWrite the entire prompt in ${config.langName || config.lang}. Keep technical terms, file paths, tool names, and code in their original form.`);
   if (projectScan) parts.push(`\n## PROJECT CONTEXT (use to ground the prompt)\n${summarize(projectScan)}`);
 
   parts.push(`\nNow produce the final prompt for the ${config.agent} agent, following the Universal Prompt Structure and including the Platform Playbook.`);

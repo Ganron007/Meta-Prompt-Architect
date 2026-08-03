@@ -2,6 +2,7 @@ const templates = require('./templates');
 const { enhanceWithLLM } = require('./enhancer');
 const { buildPlaybook } = require('./platforms');
 const { renderRecipe, getRecipe } = require('./recipes');
+const { getStrings } = require('./i18n');
 
 async function generate(config) {
   const {
@@ -17,6 +18,7 @@ async function generate(config) {
     recipe,
     customRecipes = {},
     variables = {},
+    lang = 'en',
     provider,
     model,
     apiKey,
@@ -48,96 +50,77 @@ async function generate(config) {
 
   const agentProfile = templates.agentProfiles[agent] || templates.agentProfiles.generic;
   const domainProfile = templates.domainProfiles[domain] || templates.domainProfiles.general;
+  const t = getStrings(lang);
 
-  const role = buildRole(agentProfile, domainProfile, enhancedTask);
-  const objective = buildObjective(enhancedTask, outputFormat, includeExamples);
-  const outputSpec = buildOutputSpec(outputFormat);
-  const inputs = buildInputs(enhancedContext, enhancedTask);
-  const rules = buildRules(enhancedConstraints, agentProfile, tone);
+  const role = t.roleLine(agentProfile.title, domainProfile.label);
+  const objective = buildObjective(enhancedTask, outputFormat, includeExamples, t);
+  const outputSpec = t.outputSpecs[outputFormat] || t.outputSpecs.markdown;
+  const inputs = buildInputs(enhancedContext, enhancedTask, t);
+  const rules = buildRules(enhancedConstraints, agentProfile, tone, t);
 
   const prompt = `# ${role}
 
-## Context & Constraints
+${t.contextHeading}
 ${domainProfile.context}
 ${enhancedContext ? '\n' + enhancedContext : ''}
 ${rules}
 
 ${playbook}
 
-## Inputs
+${t.inputsHeading}
 ${inputs}
 
-## Objective
+${t.objectiveHeading}
 ${objective}
 
-## Output Format
+${t.outputHeading}
 ${outputSpec}
 
-${includeExamples ? buildExamples(domain, agent) : ''}
+${includeExamples ? buildExamples(domain, agent, t) : ''}
 
-## Initialization
-Introduce yourself, confirm your role, and ask for any missing inputs before proceeding. Be concise.
+${t.initHeading}
+${t.initBody}
 `;
 
   return prompt.trim();
 }
 
-function buildRole(agentProfile, domainProfile, task) {
-  return `Role: ${agentProfile.title} specializing in ${domainProfile.label}`;
-}
-
-function buildObjective(task, outputFormat, includeExamples) {
-  const lines = [
-    `1. Understand the user's core need: ${task || '[INSERT TASK HERE]'}`,
-    `2. Break the task into concrete, actionable steps.`,
-    `3. Produce a high-quality response in the requested format (${outputFormat}).`
-  ];
+function buildObjective(task, outputFormat, includeExamples, t) {
+  const lines = t.objectiveSteps(task || t.insertTask, outputFormat);
   if (includeExamples) {
-    lines.push('4. Include relevant examples when helpful.');
+    lines.push(t.objectiveExamples);
   }
   return lines.join('\n');
 }
 
-function buildInputs(context, task) {
+function buildInputs(context, task, t) {
   const parts = [];
-  parts.push(`- Task: ${task || '[INSERT TASK HERE]'}`);
+  parts.push(`- ${t.taskLabel}: ${task || t.insertTask}`);
   if (context) {
-    parts.push(`- Additional Context: ${context}`);
+    parts.push(`- ${t.contextLabel}: ${context}`);
   }
-  parts.push(`- Data/Files: [INSERT RELEVANT CONTENT HERE]`);
+  parts.push(`- ${t.dataLabel}: ${t.insertData}`);
   return parts.join('\n');
 }
 
-function buildRules(constraints, agentProfile, tone) {
+function buildRules(constraints, agentProfile, tone, t) {
   const parts = [];
-  parts.push(`- Tone: ${tone}.`);
+  parts.push(`- ${t.toneLabel}: ${tone}.`);
   if (constraints) {
-    parts.push(`- Constraints: ${constraints}`);
+    parts.push(`- ${t.constraintsLabel}: ${constraints}`);
   }
   parts.push(...agentProfile.rules.map(r => `- ${r}`));
   return parts.join('\n');
 }
 
-function buildOutputSpec(outputFormat) {
-  const specs = {
-    markdown: 'Use Markdown with clear headings, bullet points, and code blocks where relevant.',
-    json: 'Return a JSON object with the requested fields. No markdown, no explanatory text.',
-    table: 'Present findings in a Markdown table with clear column headers.',
-    code: 'Provide code in a clean, well-commented block. Include usage examples.',
-    diagram: 'Provide a text-based diagram (Mermaid, ASCII, or bulleted list) plus explanation.',
-    text: 'Return plain text with numbered steps or paragraphs. No special formatting required.'
-  };
-  return specs[outputFormat] || specs.markdown;
-}
-
-function buildExamples(domain, agent) {
+function buildExamples(domain, agent, t) {
   const examples = {
     'code-review': 'Example: If given a Python function, first check for secrets, then logic bugs, then style issues.',
     'security': 'Example: If a hardcoded key is found, flag severity High and suggest env var usage.',
     'lab-build': 'Example: If building a REMnux VM, list prerequisites, install commands, and verification steps.',
     'release-readiness': 'Example: Check LICENSE, secrets, README completeness, and CI status before approving.'
   };
-  return `## Examples\n${examples[domain] || 'Example: Keep responses focused, actionable, and scoped to the task.'}`;
+  return `${t.examplesHeading}\n${examples[domain] || 'Example: Keep responses focused, actionable, and scoped to the task.'}`;
 }
 
 module.exports = { generate };

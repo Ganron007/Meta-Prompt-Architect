@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Multi-language support** (`src/i18n.js`): `--lang en|es|ja|zh` translates the
+  template scaffolding (headings, role line, objective steps, input labels,
+  output specs, initialization) while keeping user content, technical terms,
+  and the Platform Playbook in original form. Consult mode instructs the
+  Architect LLM to author in the selected language. Language dropdown in the
+  web UI; `lang` is stored in history and restored on replay.
 - **Prompt versioning & diff** (`src/diff.js`): LCS line diff between any two
   history entries. `--history-diff <id1> <id2>` prints a collapsed +/- diff
   plus a config-change summary (which config fields produced the output
