@@ -785,6 +785,54 @@ async function testStreaming() {
   console.log('streaming: OK');
 }
 
+async function testIntegrationSweep() {
+  const all = listRecipes();
+  assert(all.length >= 111, `expected 111+ recipes, got ${all.length}`);
+  for (const r of all) {
+    const variables = {};
+    for (const ph of (r.placeholders || [])) {
+      if (!['task', 'context', 'constraints'].includes(ph)) variables[ph] = `test-${ph}`;
+    }
+    const rendered = renderRecipe(r.id, { task: 'integration task', context: 'integration context', constraints: 'integration constraint', variables });
+    assert(rendered, `recipe ${r.id} renders`);
+    assert(!/\{\{[^}]+\}\}/.test(rendered), `recipe ${r.id} has leftover placeholders`);
+    assert(rendered.includes('integration task'), `recipe ${r.id} interpolates task`);
+  }
+
+  const formats = ['cursorrules', 'clinerules', 'agents-md', 'windsurfrules', 'opencode', 'opencode-jsonc', 'vscode', 'custom-gpt', 'antigravity', 'markdown'];
+  for (const format of formats) {
+    const out = exportPrompt('INTEGRATION PROMPT', format, 'sweep');
+    assert(out.ext.startsWith('.'), `export ${format} has an extension`);
+    assert(out.content.includes('INTEGRATION PROMPT'), `export ${format} embeds the prompt`);
+    if (['opencode', 'custom-gpt', 'vscode'].includes(format)) {
+      JSON.parse(out.content);
+    }
+  }
+
+  const agents = ['cursor', 'deepseek', 'kimi', 'claude', 'gpt', 'windsurf', 'cline', 'opencode', 'generic'];
+  const prompts = {};
+  for (const agent of agents) {
+    const prompt = await generate({ agent, task: 'integration sweep', domain: 'security' });
+    assert(prompt.includes('Platform Playbook'), `agent ${agent} gets a platform playbook`);
+    prompts[agent] = prompt;
+  }
+  const distinct = new Set(Object.values(prompts));
+  assert(distinct.size >= agents.length - 1, 'batch generation produces distinct prompts per agent');
+  assert(prompts.cursor.includes('Cursor Platform Playbook'), 'cursor-specific playbook');
+  assert(prompts.claude.includes('Claude / Claude Code Platform Playbook'), 'claude-specific playbook');
+  console.log(`integration sweep: OK (${all.length} recipes, ${formats.length} formats, ${agents.length} agents)`);
+}
+
+async function testGoldenRegression() {
+  const { runGoldenTests } = require('./golden');
+  const results = await runGoldenTests({ update: process.env.GOLDEN_UPDATE === '1' });
+  for (const r of results) {
+    assert.strictEqual(r.status === 'match' || r.status === 'updated', true, `golden ${r.id} ${r.status} — run "node tests/golden.js --update" if this change is intentional (${r.file || r.id})`);
+  }
+  assert.strictEqual(results.length, 4, 'all golden cases ran');
+  console.log('golden regression: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -817,6 +865,8 @@ async function main() {
   testProfiles();
   await testOfflineTemplateMode();
   await testStreaming();
+  await testIntegrationSweep();
+  await testGoldenRegression();
   console.log('All tests passed.');
 }
 

@@ -1,0 +1,70 @@
+═══ CHAIN STEP 1/2 — prd-then-build (PRD → Build) ═══
+
+## Chain Context
+
+You are step 1 of 2 in a linked prompt chain: prd-then-build → saas-starter.
+
+**Handoff in:** None — you are the first step. Your output must be self-contained enough for the next step to consume without access to this conversation.
+
+**Handoff out:** Your output becomes the primary input for step 2 (saas-starter — SaaS Starter Kit). End with a clearly delimited "## Handoff Summary" section containing: what was produced, key decisions and rationale, artifact/file references, and anything the next step must know.
+
+**Context carryover:** Preserve and restate in your output: the original task statement, verbatim; all hard constraints and boundaries; key decisions made and their rationale; file paths, artifact names, and identifiers produced; open risks, blockers, and unresolved questions.
+
+**Quality gate:** Before finishing, confirm: (1) every required output element of this step is present; (2) unresolved items are explicitly listed, not silently dropped; (3) the next step's required inputs exist in your output. If any check fails, say so and state exactly what is missing.
+
+You will play TWO roles in sequence. Do not skip Phase 1. Do not ask clarifying questions — make smart assumptions and document them.
+
+## Phase 1 — Product Manager
+
+Write a complete Product Requirements Document for:
+
+**Product:** kanban app
+
+
+
+The PRD must include:
+1. **Problem statement** — what pain this solves, for whom.
+2. **Target user** — a concrete persona.
+3. **Goals & non-goals** — what v1 does and explicitly does NOT do.
+4. **User stories** — "As a [user], I want [action] so that [outcome]" for every feature.
+5. **Feature spec** — detailed description of each feature, including edge cases.
+6. **Information architecture** — pages/screens and how they connect.
+7. **Data model** — entities, relationships, key fields.
+8. **Success metrics** — how we know it works.
+9. **Assumptions & risks.**
+
+## Phase 2 — Senior Engineer
+
+Implement the ENTIRE PRD. Every user story must be fulfilled. Every feature in the spec must work.
+
+- Choose an appropriate modern tech stack and state why in one sentence.
+- Create every file with complete, working code.
+- No stubs, no TODOs, no "left as an exercise".
+- Include setup instructions that work from a fresh clone.
+- The result must be runnable and demonstrable immediately.
+
+## Hard rules
+
+- Phase 2 must trace back to Phase 1: if the PRD lists it, the code implements it.
+- No additional constraints.
+
+## Output format
+
+Phase 1 PRD in full, then a separator, then Phase 2 implementation (README → file tree → every file).
+
+## ChatGPT / GPT Platform Playbook
+
+You are running on **ChatGPT / GPT** (Chat + API model). Exploit its full capabilities:
+
+1. Use Canvas mode for iterative code or document refinement — edit inline rather than regenerating.
+2. Use Code Interpreter to prototype algorithms, validate logic, and generate data before writing final code.
+3. Set up a Project with persistent instructions (coding style, stack, conventions) and upload key reference files.
+4. Use web browsing to verify current library APIs and best practices.
+5. For UI work, ask DALL-E for a mockup first, then implement to match.
+6. Request complete, runnable code blocks — not diffs or partial updates.
+
+**Available modes:** Chat (chat.openai.com) · Canvas (collaborative editing) · Code Interpreter (sandboxed Python) · Custom GPTs · API · Projects (persistent instructions + files)
+**Context features:** Custom Instructions / Project Instructions, File upload, Web browsing, Code Interpreter (Python sandbox), DALL-E image generation, Canvas for iterative code/doc editing
+**Config files:** Custom GPT instructions, Project-level instructions and knowledge files
+**Multi-agent:** No built-in multi-agent — use Custom GPTs as specialized agents and chain outputs between them manually.
+**Terminal access:** No — output complete files for the user to apply.

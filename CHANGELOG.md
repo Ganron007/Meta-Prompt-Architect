@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Integration sweep test**: every bundled recipe renders with zero leftover
+  `{{placeholders}}`, all 10 export formats produce valid output (JSON formats
+  parse), all 9 agents get a platform playbook, and batch generation yields
+  distinct prompts per agent.
+- **Golden-file regression tests** (`tests/golden.js` + `tests/golden/`): four
+  fixed-input prompts (template, recipe, chain, Spanish) are compared against
+  checked-in goldens; drift fails the suite. Regenerate intentionally with
+  `node tests/golden.js --update`.
 - **Streaming consult output** (`src/llm.js`): `--stream` prints consult-mode
   tokens to the terminal as the Architect writes them (OpenAI-compatible,
   Anthropic, MiMo, and Ollama SSE/NDJSON parsing with split-chunk buffering).
