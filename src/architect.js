@@ -90,22 +90,20 @@ async function consultArchitect(config) {
 
   const raw = config.onToken
     ? await callLLMStream(
-      config.provider,
       config.model,
       config.apiKey,
       config.apiBase,
       messages,
       0.35,
-      { fallbackModel: config.fallbackModel, onToken: config.onToken }
+      { fallbackModel: config.fallbackModel, reasoning: config.reasoning, onToken: config.onToken }
     )
     : await callLLM(
-      config.provider,
       config.model,
       config.apiKey,
       config.apiBase,
       messages,
       0.35,
-      { fallbackModel: config.fallbackModel }
+      { fallbackModel: config.fallbackModel, reasoning: config.reasoning }
     );
 
   return {

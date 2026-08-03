@@ -78,12 +78,12 @@ async function testExporters() {
 }
 
 function testCLIArgs() {
-  const args = parseArgs(['--agent', 'cursor', '--task', 'review', '--export', 'cursorrules', '--rewrite', '--provider', 'openai', '--consult', '--project', '.', '--validate-recipes']);
+  const args = parseArgs(['--agent', 'cursor', '--task', 'review', '--export', 'cursorrules', '--rewrite', '--reasoning', 'high', '--consult', '--project', '.', '--validate-recipes']);
   assert(args.agent === 'cursor');
   assert(args.task === 'review');
   assert(args.export === 'cursorrules');
   assert(args.rewrite === true);
-  assert(args.provider === 'openai');
+  assert(args.reasoning === 'high');
   assert(args.consult === true);
   assert(args.project === '.');
   assert(args.validateRecipes === true);
@@ -123,10 +123,34 @@ function testArchitectHelpers() {
 }
 
 function testConfig() {
-  const args = { provider: 'ollama' };
-  resolveLLM(args);
-  assert(args.provider === 'ollama', 'ollama provider should resolve');
-  assert(args.model === 'llama3.2', 'ollama default model');
+  const saved = {};
+  for (const k of ['OPENAI_API_KEY', 'OPENAI_BASE_URL', 'OPENAI_MODEL', 'OPENAI_REASONING', 'OPENAI_FALLBACK_MODEL']) {
+    saved[k] = process.env[k];
+    delete process.env[k];
+  }
+  try {
+    assert.throws(() => resolveLLM({}), /OPENAI_MODEL/, 'missing model should throw');
+    process.env.OPENAI_MODEL = 'env-model';
+    assert.throws(() => resolveLLM({}), /OPENAI_API_KEY/, 'default endpoint without key should throw');
+    const local = resolveLLM({ apiBase: 'http://localhost:11434/v1' });
+    assert.strictEqual(local.model, 'env-model', 'model resolves from env');
+    assert.strictEqual(local.apiBase, 'http://localhost:11434/v1', 'custom base resolves without a key');
+    assert.strictEqual(local.apiKey, undefined, 'keyless local server allowed');
+    process.env.OPENAI_API_KEY = 'k';
+    const def = resolveLLM({ model: 'cli-model' });
+    assert.strictEqual(def.apiBase, 'https://api.openai.com/v1', 'default base URL');
+    assert.strictEqual(def.model, 'cli-model', 'CLI flag beats env');
+    assert.throws(() => resolveLLM({ reasoning: 'extreme' }), /reasoning/i, 'invalid reasoning rejected');
+    const r = resolveLLM({ reasoning: 'low' });
+    assert.strictEqual(r.reasoning, 'low', 'valid reasoning accepted');
+    const b = resolveLLM({ apiBase: 'https://api.test/v1/' });
+    assert.strictEqual(b.apiBase, 'https://api.test/v1', 'trailing slash stripped');
+  } finally {
+    for (const k of Object.keys(saved)) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  }
   console.log('config: OK');
 }
 
@@ -745,19 +769,20 @@ async function testOfflineTemplateMode() {
 }
 
 async function testStreaming() {
-  assert.strictEqual(parseStreamLine('openai', 'data: {"choices":[{"delta":{"content":"Hello"}}]}'), 'Hello', 'openai token parsed');
-  assert.strictEqual(parseStreamLine('openai', 'data: [DONE]'), null, 'DONE sentinel ignored');
-  assert.strictEqual(parseStreamLine('openai', 'data: {"choices":[{"delta":{}}]}'), null, 'empty delta ignored');
-  assert.strictEqual(parseStreamLine('anthropic', 'data: {"type":"content_block_delta","delta":{"text":"World"}}'), 'World', 'anthropic delta parsed');
-  assert.strictEqual(parseStreamLine('anthropic', 'data: {"type":"message_start"}'), null, 'anthropic non-delta ignored');
-  assert.strictEqual(parseStreamLine('ollama', '{"message":{"content":"Hi"},"done":false}'), 'Hi', 'ollama NDJSON parsed');
-  assert.strictEqual(parseStreamLine('ollama', '{"done":true}'), null, 'ollama done ignored');
-  assert.strictEqual(parseStreamLine('openai', 'garbage not json'), null, 'malformed line tolerated');
+  assert.strictEqual(parseStreamLine('data: {"choices":[{"delta":{"content":"Hello"}}]}'), 'Hello', 'token parsed');
+  assert.strictEqual(parseStreamLine('data: [DONE]'), null, 'DONE sentinel ignored');
+  assert.strictEqual(parseStreamLine('data: {"choices":[{"delta":{}}]}'), null, 'empty delta ignored');
+  assert.strictEqual(parseStreamLine('event: message_start'), null, 'event lines ignored');
+  assert.strictEqual(parseStreamLine('garbage not json'), null, 'malformed line tolerated');
+  assert.strictEqual(parseStreamLine('data: {broken'), null, 'broken JSON tolerated');
 
-  const req = streamRequest('openai', 'https://api.test', 'm', 'k', [{ role: 'user', content: 'x' }], 0.5);
-  assert(req.url === 'https://api.test/v1/chat/completions' && req.body.stream === true && req.headers.Authorization === 'Bearer k', 'openai stream request built');
-  const anthReq = streamRequest('anthropic', 'https://api.test', 'm', 'k', [{ role: 'system', content: 's' }, { role: 'user', content: 'u' }], 0.5);
-  assert(anthReq.body.stream === true && anthReq.body.system === 's' && anthReq.body.messages.length === 1, 'anthropic stream request splits system');
+  const req = streamRequest('https://api.test/v1', 'm', 'k', [{ role: 'user', content: 'x' }], 0.5);
+  assert(req.url === 'https://api.test/v1/chat/completions' && req.body.stream === true && req.headers.Authorization === 'Bearer k', 'stream request built');
+  assert(!('reasoning_effort' in req.body), 'reasoning omitted by default');
+  const rReq = streamRequest('https://api.test/v1/', 'm', 'k', [], 0.5, 'high');
+  assert(rReq.url === 'https://api.test/v1/chat/completions' && rReq.body.reasoning_effort === 'high', 'reasoning_effort sent + trailing slash handled');
+  const keyless = streamRequest('http://localhost:11434/v1', 'm', undefined, [], 0.5);
+  assert(!('Authorization' in keyless.headers), 'no auth header without a key');
 
   const chunks = [
     'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
@@ -776,7 +801,7 @@ async function testStreaming() {
   });
   try {
     const tokens = [];
-    const full = await callLLMStream('openai', 'm', 'k', 'https://api.test', [{ role: 'user', content: 'x' }], 0.3, { onToken: t => tokens.push(t) });
+    const full = await callLLMStream('m', 'k', 'https://api.test/v1', [{ role: 'user', content: 'x' }], 0.3, { onToken: t => tokens.push(t) });
     assert.strictEqual(full, 'Hello World', 'stream accumulates full text across split chunks');
     assert.deepStrictEqual(tokens, ['Hello', ' World'], 'onToken fires per parsed token');
   } finally {

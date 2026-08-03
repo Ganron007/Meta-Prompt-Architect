@@ -29,10 +29,10 @@ function getConfig() {
     consult,
     rewrite: $('rewrite').checked,
     recipe: $('recipe').value || undefined,
-    provider: $('provider').value,
     model: $('model').value.trim(),
     apiKey: $('apiKey').value.trim(),
     apiBase: $('apiBase').value.trim(),
+    reasoning: $('reasoning').value || undefined,
     project: $('builderProject').value.trim() || $('project').value.trim() || undefined,
     variables: getRecipeVariables()
   };
@@ -56,22 +56,6 @@ function toggleLLMConfig() {
   } else {
     tag.textContent = 'TEMPLATE ENGINE';
     tag.classList.remove('consult');
-  }
-}
-
-function setDefaultModel() {
-  const provider = $('provider').value;
-  const modelInput = $('model');
-  const defaults = {
-    openai: 'gpt-4o-mini',
-    'openai-compatible': 'gpt-4o-mini',
-    deepseek: 'deepseek-chat',
-    anthropic: 'claude-3-5-haiku-latest',
-    ollama: 'llama3.2',
-    mimo: 'mimo-v2.5'
-  };
-  if (!modelInput.value || Object.values(defaults).includes(modelInput.value)) {
-    modelInput.value = defaults[provider] || '';
   }
 }
 
@@ -505,7 +489,6 @@ $('clearInputsBtn').addEventListener('click', clearInputs);
 $('clearOutputBtn').addEventListener('click', clearOutput);
 $('rewrite').addEventListener('change', toggleLLMConfig);
 $('consult').addEventListener('change', toggleLLMConfig);
-$('provider').addEventListener('change', setDefaultModel);
 
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -783,4 +766,3 @@ renderBuilderCategories();
 loadMeta();
 loadFromUrl();
 toggleLLMConfig();
-setDefaultModel();

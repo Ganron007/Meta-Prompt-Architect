@@ -13,13 +13,13 @@ Rules:
 async function enhanceWithLLM(text, config = {}) {
   if (!text || !text.trim()) return text;
   const {
-    provider,
     model,
     apiKey,
-    apiBase
+    apiBase,
+    reasoning
   } = config;
 
-  if (!provider) return enhanceWithRules(text);
+  if (!model) return enhanceWithRules(text);
 
   const messages = [
     { role: 'system', content: ENHANCER_SYSTEM_PROMPT },
@@ -27,7 +27,7 @@ async function enhanceWithLLM(text, config = {}) {
   ];
 
   try {
-    const result = await callLLM(provider, model, apiKey, apiBase, messages, 0.3);
+    const result = await callLLM(model, apiKey, apiBase, messages, 0.3, { reasoning });
     return result || enhanceWithRules(text);
   } catch {
     return enhanceWithRules(text);

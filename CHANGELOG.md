@@ -1,9 +1,34 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+- **BREAKING: generic LLM configuration.** All provider-specific code
+  (openai/deepseek/anthropic/ollama/mimo) is removed. One OpenAI-compatible
+  configuration now drives every LLM feature: `OPENAI_API_KEY`,
+  `OPENAI_BASE_URL`, `OPENAI_MODEL`. Model names are never hardcoded — set
+  whatever your endpoint serves. `--provider` flag removed; per-provider env
+  vars (`ANTHROPIC_API_KEY`, `DEEPSEEK_API_KEY`, `MIMO_API_KEY`,
+  `ARCHITECT_PROVIDER`, `ARCHITECT_MODEL`, `ARCHITECT_API_BASE`,
+  `ARCHITECT_MODEL_FALLBACK`, `OLLAMA_BASE_URL`) replaced by `OPENAI_MODEL`,
+  `OPENAI_BASE_URL`, `OPENAI_FALLBACK_MODEL`. Base URLs now follow the OpenAI
+  SDK convention (include `/v1`, e.g. `http://localhost:11434/v1` for Ollama).
+  Web UI provider dropdown replaced by model + base URL + reasoning fields.
+
+### Added
+- **Reasoning effort**: `--reasoning low|medium|high` (or `OPENAI_REASONING`)
+  sends `reasoning_effort` to reasoning-capable models across consult,
+  streaming, rewrite, prompt testing, and templatize.
+
+### Fixed
+- **Web UI modals always visible**: `.modal` set `display: flex`, overriding
+  the browser's `[hidden]` rule — added a `.modal[hidden]` guard so the
+  History and Usage analytics modals stay closed until opened.
 
 ## [1.5.0] - 2026-08-03
 

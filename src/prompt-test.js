@@ -84,13 +84,13 @@ function parseJudgeResponse(raw) {
   return parsed;
 }
 
-async function runPromptTest(prompt, { provider, model, apiKey, apiBase, fallbackModel, outputFormat = 'markdown', criteria = [], judge = true } = {}) {
-  const response = await callLLM(provider, model, apiKey, apiBase, [{ role: 'user', content: prompt }], 0.2, { fallbackModel });
+async function runPromptTest(prompt, { model, apiKey, apiBase, fallbackModel, reasoning, outputFormat = 'markdown', criteria = [], judge = true } = {}) {
+  const response = await callLLM(model, apiKey, apiBase, [{ role: 'user', content: prompt }], 0.2, { fallbackModel, reasoning });
   const evaluation = evaluateResponse(response, { outputFormat, criteria });
   let judgeResult = null;
   if (judge) {
     try {
-      const raw = await callLLM(provider, model, apiKey, apiBase, buildJudgeMessages(prompt, response), 0, {});
+      const raw = await callLLM(model, apiKey, apiBase, buildJudgeMessages(prompt, response), 0, { reasoning });
       judgeResult = parseJudgeResponse(raw);
     } catch (err) {
       judgeResult = { error: `judge unavailable: ${err.message}` };

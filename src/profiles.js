@@ -4,7 +4,7 @@ const path = require('path');
 
 const PROFILE_FIELDS = [
   'agent', 'agents', 'domain', 'outputFormat', 'tone', 'lang', 'includeExamples',
-  'rewrite', 'consult', 'provider', 'model', 'apiBase', 'recipe', 'chain',
+  'rewrite', 'consult', 'model', 'apiBase', 'reasoning', 'recipe', 'chain',
   'score', 'expect', 'noJudge', 'context', 'constraints'
 ];
 

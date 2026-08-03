@@ -22,10 +22,10 @@ async function generate(config) {
     pluginPlatforms = {},
     pluginEnhancers = {},
     enhanceWith = [],
-    provider,
     model,
     apiKey,
-    apiBase
+    apiBase,
+    reasoning
   } = config;
 
   let enhancedTask = task;
@@ -33,7 +33,7 @@ async function generate(config) {
   let enhancedConstraints = constraints;
 
   if (rewrite) {
-    const llmConfig = { provider, model, apiKey, apiBase };
+    const llmConfig = { model, apiKey, apiBase, reasoning };
     if (task) enhancedTask = await enhanceWithLLM(task, llmConfig);
     if (context) enhancedContext = await enhanceWithLLM(context, llmConfig);
     if (constraints) enhancedConstraints = await enhanceWithLLM(constraints, llmConfig);

@@ -235,31 +235,28 @@
               <div class="llm-inner">
                 <div class="field-row">
                   <div class="field">
-                    <label for="provider">LLM provider</label>
+                    <label for="model">Model</label>
+                    <input type="text" id="model" placeholder="any model your endpoint serves" />
+                  </div>
+                  <div class="field">
+                    <label for="reasoning">Reasoning effort <span class="optional">reasoning models</span></label>
                     <div class="select-wrap">
-                      <select id="provider">
-                        <option value="">Pre-configured (.env)</option>
-                        <option value="mimo">MiMo (Xiaomi)</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="deepseek">DeepSeek</option>
-                        <option value="anthropic">Anthropic</option>
-                        <option value="ollama">Ollama (local)</option>
-                        <option value="openai-compatible">OpenAI-compatible</option>
+                      <select id="reasoning">
+                        <option value="">Default</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
                       </select>
                     </div>
                   </div>
-                  <div class="field">
-                    <label for="model">Model</label>
-                    <input type="text" id="model" placeholder="e.g. gpt-4o-mini" />
-                  </div>
                 </div>
                 <div class="field">
-                  <label for="apiKey">API key <span class="optional">not needed for Ollama</span></label>
+                  <label for="apiKey">API key <span class="optional">blank for keyless local servers</span></label>
                   <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
                 </div>
                 <div class="field">
-                  <label for="apiBase">API base URL <span class="optional">optional</span></label>
-                  <input type="text" id="apiBase" placeholder="https://api.openai.com" />
+                  <label for="apiBase">API base URL <span class="optional">any OpenAI-compatible endpoint</span></label>
+                  <input type="text" id="apiBase" placeholder="https://api.openai.com/v1" />
                 </div>
                 <div class="field">
                   <label for="project">Project path <span class="optional">consult grounding</span></label>

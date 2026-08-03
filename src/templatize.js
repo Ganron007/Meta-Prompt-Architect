@@ -91,9 +91,9 @@ function heuristicTemplatize(promptText, { name, category } = {}) {
 }
 
 async function templatizePrompt(promptText, config = {}) {
-  const useLLM = config.provider && !config.offline;
+  const useLLM = config.model && !config.offline;
   const draft = useLLM
-    ? parseTemplatizeResponse(await callLLM(config.provider, config.model, config.apiKey, config.apiBase, buildTemplatizeMessages(promptText, config), 0.2, { fallbackModel: config.fallbackModel }))
+    ? parseTemplatizeResponse(await callLLM(config.model, config.apiKey, config.apiBase, buildTemplatizeMessages(promptText, config), 0.2, { fallbackModel: config.fallbackModel, reasoning: config.reasoning }))
     : heuristicTemplatize(promptText, config);
   return buildCustomRecipe({
     name: config.name || draft.label,

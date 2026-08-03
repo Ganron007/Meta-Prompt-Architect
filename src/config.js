@@ -19,53 +19,27 @@ function loadEnvChain() {
   loadEnv(path.join(process.cwd(), '.env'));
 }
 
-function resolveAPIKey(args) {
-  if (args.apiKey) return args.apiKey;
-  if (args.provider === 'openai' || args.provider === 'openai-compatible') return process.env.OPENAI_API_KEY;
-  if (args.provider === 'deepseek') return process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
-  if (args.provider === 'anthropic') return process.env.ANTHROPIC_API_KEY;
-  if (args.provider === 'mimo') return process.env.MIMO_API_KEY;
-  return undefined;
-}
+const { DEFAULT_BASE_URL } = require('./llm');
 
-function resolveAPIBase(args) {
-  if (args.apiBase) return args.apiBase;
-  if (args.provider === 'deepseek') return process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-  if (args.provider === 'ollama') return process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
-  if (args.provider === 'mimo') return process.env.MIMO_BASE_URL || 'https://api.xiaomimimo.com';
-  return process.env.OPENAI_BASE_URL;
-}
-
-function resolveModel(args) {
-  if (args.model) return args.model;
-  const defaults = {
-    openai: 'gpt-4o-mini',
-    'openai-compatible': 'gpt-4o-mini',
-    deepseek: 'deepseek-chat',
-    anthropic: 'claude-3-5-haiku-latest',
-    ollama: 'llama3.2',
-    mimo: 'mimo-v2.5'
-  };
-  return defaults[args.provider] || 'gpt-4o-mini';
-}
-
-function resolveFallbackModel(args) {
-  if (args.fallbackModel) return args.fallbackModel;
-  if (process.env.ARCHITECT_MODEL_FALLBACK) return process.env.ARCHITECT_MODEL_FALLBACK;
-  if (args.provider === 'mimo') return args.model === 'mimo-v2.5-pro' ? 'mimo-v2.5' : 'mimo-v2.5-pro';
-  return undefined;
-}
+const VALID_REASONING = ['low', 'medium', 'high'];
 
 function resolveLLM(args) {
-  args.provider = args.provider || process.env.ARCHITECT_PROVIDER || (process.env.OPENAI_API_KEY ? 'openai' : (process.env.ANTHROPIC_API_KEY ? 'anthropic' : (process.env.MIMO_API_KEY ? 'mimo' : 'ollama')));
-  args.apiKey = resolveAPIKey(args);
-  args.apiBase = args.apiBase || process.env.ARCHITECT_API_BASE || resolveAPIBase(args);
-  args.model = args.model || process.env.ARCHITECT_MODEL || resolveModel(args);
-  args.fallbackModel = resolveFallbackModel(args);
-  if (args.provider !== 'ollama' && !args.apiKey) {
-    throw new Error(`--consult requires an API key for provider "${args.provider}" (set the env var or pass --api-key), or use --provider ollama for a local model.`);
+  args.apiKey = args.apiKey || process.env.OPENAI_API_KEY;
+  const customBase = args.apiBase || process.env.OPENAI_BASE_URL;
+  args.apiBase = (customBase || DEFAULT_BASE_URL).replace(/\/+$/, '');
+  args.model = args.model || process.env.OPENAI_MODEL;
+  args.reasoning = args.reasoning || process.env.OPENAI_REASONING || undefined;
+  args.fallbackModel = args.fallbackModel || process.env.OPENAI_FALLBACK_MODEL || undefined;
+  if (args.reasoning && !VALID_REASONING.includes(args.reasoning)) {
+    throw new Error(`Invalid reasoning effort "${args.reasoning}" — use one of: ${VALID_REASONING.join(', ')}.`);
+  }
+  if (!args.model) {
+    throw new Error('No model configured — set OPENAI_MODEL in .env or pass --model.');
+  }
+  if (!args.apiKey && !customBase) {
+    throw new Error('LLM features need an API key — set OPENAI_API_KEY in .env or pass --api-key (or point OPENAI_BASE_URL at a keyless local server).');
   }
   return args;
 }
 
-module.exports = { loadEnv, loadEnvChain, resolveAPIKey, resolveAPIBase, resolveModel, resolveFallbackModel, resolveLLM };
+module.exports = { loadEnv, loadEnvChain, resolveLLM, VALID_REASONING };

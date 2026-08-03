@@ -69,7 +69,7 @@ node src/cli.js --agent cursor --domain security --task "Review API key handling
 # Use a one-shot recipe
 node src/cli.js --recipe one-shot-game --agent cursor --task "tower defense game"
 
-# LLM consult mode (needs API key or Ollama)
+# LLM consult mode (needs an OpenAI-compatible endpoint — see Configuration)
 node src/cli.js --consult --agent claude --task "harden my RAG API" --project .
 
 # Batch: multiple agents at once
@@ -142,10 +142,10 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--recipe` | Use a one-shot recipe |
 | `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` |
 | `--recipes` | List all recipes |
-| `--provider` | `openai`, `deepseek`, `anthropic`, `ollama`, `openai-compatible`, `mimo` |
-| `--model` | LLM model name |
-| `--api-key` | API key (or env var) |
-| `--api-base` | Custom API base URL (for `openai-compatible`) |
+| `--model` | LLM model name (or `OPENAI_MODEL`) |
+| `--api-key` | API key (or `OPENAI_API_KEY`) |
+| `--api-base` | OpenAI-compatible base URL (or `OPENAI_BASE_URL`) |
+| `--reasoning` | Reasoning effort for reasoning models: `low`, `medium`, `high` |
 | `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `opencode-jsonc`, `vscode`, `custom-gpt`, `antigravity`, `markdown` |
 | `--name` / `--out` | Output file name and directory (default: `./out`) |
 | `--pipe` | Send to agent: `cursor`, `claude`, `opencode`, `aider`, `windsurf`, `continue`, `cody`, `copilot` |
@@ -199,14 +199,19 @@ Full-viewport drafting console. Binds to `127.0.0.1` (set `HOST`/`PORT` to overr
 cp .env.example .env
 ```
 
-| Provider | Env Var |
-|---|---|
-| OpenAI | `OPENAI_API_KEY` |
-| Anthropic | `ANTHROPIC_API_KEY` |
-| DeepSeek | `DEEPSEEK_API_KEY` |
-| MiMo | `MIMO_API_KEY` |
-| Ollama | *(no key — local on `:11434`; `OLLAMA_BASE_URL` to override)* |
-| GitHub | `GITHUB_TOKEN` *(only for `--share-pack` / Gist imports)* |
+One generic OpenAI-compatible configuration drives every LLM feature
+(`--consult`, `--rewrite`, `--test`, `--templatize`). No provider labels, no
+hardcoded model names — point it at **any** OpenAI-compatible endpoint
+(OpenAI, DeepSeek, MiMo, Groq, vLLM, LM Studio, Ollama, ...):
+
+| Setting | Env Var | Notes |
+|---|---|---|
+| API key | `OPENAI_API_KEY` | Blank is fine for keyless local servers |
+| Base URL | `OPENAI_BASE_URL` | Default `https://api.openai.com/v1`; e.g. `http://localhost:11434/v1` for Ollama |
+| Model | `OPENAI_MODEL` | Required for LLM features — whatever your endpoint serves |
+| Reasoning effort | `OPENAI_REASONING` | Optional `low` / `medium` / `high` for reasoning models |
+| Fallback model | `OPENAI_FALLBACK_MODEL` | Optional retry model if the primary call fails |
+| GitHub | `GITHUB_TOKEN` | Only for `--share-pack` / Gist recipe imports |
 
 ## Project Structure
 

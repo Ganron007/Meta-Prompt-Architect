@@ -40,10 +40,10 @@ Options:
   --examples                                        Include examples
   --rewrite                                         Rule/LLM-polish raw input before templating
   --consult                                         The Architect LLM authors the prompt itself
-  --provider <openai|deepseek|anthropic|ollama|openai-compatible|mimo>  LLM provider
-  --model <model-name>                             LLM model name
-  --api-key <key>                                  API key (or set env var)
-  --api-base <url>                                Custom API base URL
+  --model <model-name>                             LLM model name (or OPENAI_MODEL)
+  --api-key <key>                                  API key (or OPENAI_API_KEY)
+  --api-base <url>                                 OpenAI-compatible base URL (or OPENAI_BASE_URL)
+  --reasoning <low|medium|high>                    Reasoning effort for reasoning models
   --recipe <name>                                 Use a proven one-shot recipe (see --recipes)
   --chain <id1,id2,...>                           Link recipes into a chain with handoffs and quality gates
   --recipes                                         List available recipes and exit
@@ -95,15 +95,17 @@ Options:
   --help                                            Show this help
 
 Environment variables:
-  OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, OLLAMA_BASE_URL
+  OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, OPENAI_REASONING,
+  OPENAI_FALLBACK_MODEL, GITHUB_TOKEN
   (also read from .env in the current directory)
 
 Examples:
   # Context-aware, LLM-authored prompt (run from inside your project):
   prompt-architect --consult --agent cursor --task "harden my RAG api keys" --project .
 
-  # Free/offline via Ollama:
-  prompt-architect --consult --agent kimi --task "merge my two scrapers" --provider ollama
+  # Any OpenAI-compatible server works — e.g. local Ollama:
+  #   OPENAI_BASE_URL=http://localhost:11434/v1 OPENAI_MODEL=llama3.2
+  prompt-architect --consult --agent kimi --task "merge my two scrapers"
 
   # Classic template mode:
   prompt-architect --agent cursor --domain security --task "Review API key handling" --export cursorrules
@@ -115,7 +117,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd(), _provided: new Set() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--model', '--api-key', '--api-base', '--reasoning', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -169,10 +171,10 @@ function parseArgs(argv) {
       case '--stream': args.stream = true; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
-      case '--provider': args.provider = argv[++i]; break;
       case '--model': args.model = argv[++i]; break;
       case '--api-key': args.apiKey = argv[++i]; break;
       case '--api-base': args.apiBase = argv[++i]; break;
+      case '--reasoning': args.reasoning = argv[++i]; break;
       case '--export': args.export = argv[++i]; break;
       case '--name': args.name = argv[++i]; break;
       case '--out': args.out = argv[++i]; break;
@@ -263,18 +265,18 @@ async function main() {
       if (!fs.existsSync(filePath)) { console.error(`Prompt file not found: ${filePath}`); process.exit(1); }
       promptText = fs.readFileSync(filePath, 'utf8');
     }
-    let provider = null;
+    let llmReady = false;
     if (!args.offline) {
-      try { resolveLLM(args); provider = args.provider; }
+      try { resolveLLM(args); llmReady = true; }
       catch { console.error('[templatize] no LLM available — using offline heuristic extraction.'); }
     }
     const recipe = await templatizePrompt(promptText, {
-      provider,
       model: args.model,
       apiKey: args.apiKey,
       apiBase: args.apiBase,
+      reasoning: args.reasoning,
       fallbackModel: args.fallbackModel,
-      offline: args.offline || !provider,
+      offline: args.offline || !llmReady,
       name: args.recipeName,
       category: args.recipeCategory
     });
@@ -282,7 +284,7 @@ async function main() {
     if (args.json) {
       console.log(JSON.stringify({ recipe, saved: { directory: saved.directory, filePath: saved.filePath } }, null, 2));
     } else {
-      console.log(`Recipe "${recipe.id}" extracted (${provider ? 'LLM' : 'offline heuristic'}) and saved to ${saved.filePath}`);
+      console.log(`Recipe "${recipe.id}" extracted (${llmReady ? 'LLM' : 'offline heuristic'}) and saved to ${saved.filePath}`);
       console.log(`Use it: prompt-architect --recipe ${recipe.id} --task "..."`);
     }
     return;
@@ -552,10 +554,10 @@ async function main() {
       for (const result of results) {
         try {
           result.testResult = await runPromptTest(result.prompt, {
-            provider: args.provider,
             model: args.model,
             apiKey: args.apiKey,
             apiBase: args.apiBase,
+            reasoning: args.reasoning,
             fallbackModel: args.fallbackModel,
             outputFormat: args.outputFormat,
             criteria,
