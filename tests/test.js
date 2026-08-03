@@ -7,7 +7,7 @@ const { enhanceWithRules } = require('../src/enhancer');
 const { scanProject, summarize } = require('../src/context');
 const { unwrapPrompt, ARCHITECT_SYSTEM } = require('../src/architect');
 const { loadEnv, resolveLLM } = require('../src/config');
-const { listRecipes, renderRecipe, getRecipe } = require('../src/recipes');
+const { listRecipes, renderRecipe, getRecipe, validateRecipes } = require('../src/recipes');
 const { buildPlaybook, getPlatform } = require('../src/platforms');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('../src/history');
 const { scorePrompt, formatScore } = require('../src/scorer');
@@ -64,7 +64,7 @@ async function testExporters() {
 }
 
 function testCLIArgs() {
-  const args = parseArgs(['--agent', 'cursor', '--task', 'review', '--export', 'cursorrules', '--rewrite', '--provider', 'openai', '--consult', '--project', '.']);
+  const args = parseArgs(['--agent', 'cursor', '--task', 'review', '--export', 'cursorrules', '--rewrite', '--provider', 'openai', '--consult', '--project', '.', '--validate-recipes']);
   assert(args.agent === 'cursor');
   assert(args.task === 'review');
   assert(args.export === 'cursorrules');
@@ -72,6 +72,7 @@ function testCLIArgs() {
   assert(args.provider === 'openai');
   assert(args.consult === true);
   assert(args.project === '.');
+  assert(args.validateRecipes === true);
   console.log('cli args: OK');
 }
 
@@ -117,6 +118,10 @@ function testConfig() {
 
 function testRecipes() {
   const list = listRecipes();
+  const validation = validateRecipes();
+  assert(validation.valid, `recipe validation failed: ${validation.errors.join('; ')}`);
+  assert.strictEqual(validation.recipeCount, list.length, 'validation should cover every recipe');
+  assert(validation.categoryCount >= 16, 'validation should cover all registered categories');
   assert(list.length >= 111, `expected at least 111 recipes, got ${list.length}`);
   const categories = new Set(list.map(r => r.category));
   assert(categories.has('build'), 'should have build category');
@@ -161,6 +166,19 @@ function testRecipes() {
   assert(cryptoRecipe.includes('Review AES usage in auth service'), 'crypto recipe should interpolate task');
   assert(cryptoRecipe.includes('Key management'), 'crypto recipe should cover key management');
   assert(renderRecipe('nonexistent', { task: 'x' }) === null, 'unknown recipe returns null');
+
+  const invalid = validateRecipes({
+    broken: {
+      label: 'Broken',
+      tagline: 'Broken recipe',
+      category: 'not-registered',
+      template: 'Do {{task}} with {{unknown}} and {{unfinished'
+    }
+  });
+  assert(!invalid.valid, 'invalid recipe should fail validation');
+  assert(invalid.errors.some(error => error.includes('unregistered category')), 'should report unknown categories');
+  assert(invalid.errors.some(error => error.includes('unrecognized placeholder')), 'should report unknown placeholders');
+  assert(invalid.errors.some(error => error.includes('unmatched')), 'should report unmatched placeholders');
   console.log('recipes: OK');
 }
 

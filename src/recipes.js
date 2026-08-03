@@ -1,3 +1,22 @@
+const recipeCategories = Object.freeze({
+  build: 'Software Build',
+  security: 'Cybersecurity',
+  'sec-research': 'Security Research (Lab Methodology)',
+  dfir: 'DFIR — Digital Forensics & Incident Response',
+  'reverse-eng': 'Reverse Engineering',
+  malware: 'Malware Analysis',
+  aisec: 'AI / ML Security',
+  redteam: 'Red Team Operations',
+  blueteam: 'Blue Team / Detection Engineering',
+  cloudsec: 'Cloud Security',
+  appsec: 'Application Security',
+  osint: 'OSINT / Threat Intelligence',
+  crypto: 'Cryptography',
+  ai: 'AI / Agentic Frameworks',
+  'ai-security': 'AI × Cybersecurity',
+  'ai-ops': 'AI × Operations'
+});
+
 const SEC_RESEARCH_METHODOLOGY = `## BEGIN TRUSTED DEVELOPER PROMPT
 
 <identity>
@@ -219,6 +238,7 @@ After receiving the task instance and artifact data, start at Phase 0. Do not si
 const recipes = {
   'readme-driven': {
     label: 'README-Driven One-Shot',
+    category: 'build',
     tagline: 'Write the README as if the project is finished, then implement every word of it.',
     origin: 'README-Driven Development (Tom Preston-Werner)',
     taskHint: 'Describe the project: what it does, who it is for, key features...',
@@ -272,6 +292,7 @@ Start with the full README.md, then output every project file as a headed code b
 
   'one-shot-game': {
     label: 'One-Shot Game',
+    category: 'build',
     tagline: 'A complete, playable, polished game from a single prompt. The viral pattern.',
     origin: 'Cursor / Claude "build a game in one prompt" community pattern',
     taskHint: 'Describe the game: genre, core mechanic, setting, win/lose condition...',
@@ -324,6 +345,7 @@ One complete HTML file in a single code block, ready to save and play.`
 
   'fullstack-app': {
     label: 'Full-Stack App One-Shot',
+    category: 'build',
     tagline: 'A complete, production-ready web app — every route, endpoint, and component.',
     origin: '"No placeholders, no TODOs" production prompt pattern',
     taskHint: 'Describe the app: what it does, core features, preferred stack (or let it choose)...',
@@ -373,6 +395,7 @@ Start with the README, then the project structure tree, then every file as a hea
 
   'prd-then-build': {
     label: 'PRD → Build',
+    category: 'build',
     tagline: 'Act as a PM, write the full product spec. Then act as an engineer, build all of it.',
     origin: 'Two-phase "PM hat then engineer hat" pattern',
     taskHint: 'Describe the product idea: problem it solves, target user, key features...',
@@ -419,6 +442,7 @@ Phase 1 PRD in full, then a separator, then Phase 2 implementation (README → f
 
   'saas-starter': {
     label: 'SaaS Starter Kit',
+    category: 'build',
     tagline: 'Auth + billing + dashboard + API + landing page — a full SaaS skeleton in one shot.',
     origin: '"SaaS boilerplate in one prompt" indie-hacker pattern',
     taskHint: 'Describe the SaaS: what it does, who pays for it, core value prop...',
@@ -477,6 +501,7 @@ README → project tree → every file as a headed code block.`
 
   'clone-builder': {
     label: 'Clone Builder',
+    category: 'build',
     tagline: '"Build a working clone of [famous app]" — the fastest way to a real product.',
     origin: '"Clone X but for Y" viral build pattern',
     taskHint: 'Name the app to clone and what to change: "Trello but for recipe planning"...',
@@ -510,6 +535,7 @@ README → file tree → every file as a headed code block. End with "How this d
 
   'codebase-overhaul': {
     label: 'Codebase Overhaul',
+    category: 'build',
     tagline: 'Refactor, test, secure, and document an existing codebase in one structured pass.',
     origin: 'Senior-engineer code-review-and-fix pattern',
     taskHint: 'Point at the codebase and say what hurts: "legacy Flask app, no tests, secrets in code"...',
@@ -559,6 +585,7 @@ Audit table → security fixes → refactors → tests → docs. Group by file.`
 
   'spec-first-api': {
     label: 'Spec-First API',
+    category: 'build',
     tagline: 'Design the OpenAPI spec first, then implement every endpoint against it.',
     origin: 'API-design-first / contract-first development pattern',
     taskHint: 'Describe the API: domain, resources, key operations, consumers...',
@@ -2034,7 +2061,7 @@ For each tool:
 ### 1. Prompt library
 - Directory structure: one YAML/JSON file per prompt variant.
 - Schema: id, version, template, variables, model config (temperature, max_tokens), metadata (author, date, tags).
-- Variable system: {{variable}} placeholders with type validation and defaults.
+- Variable system: named placeholders with type validation and defaults.
 - Versioning: semantic versions, changelog per prompt, rollback support.
 
 ### 2. Prompt templates
@@ -7347,4 +7374,64 @@ function renderRecipe(name, config) {
     .replace(/\{\{constraints\}\}/g, constraints);
 }
 
-module.exports = { recipes, getRecipe, listRecipes, renderRecipe };
+function validateRecipes(recipeSet = recipes) {
+  const knownPlaceholders = new Set(['task', 'context', 'constraints']);
+  const requiredFields = ['label', 'tagline', 'category', 'template'];
+  const errors = [];
+  const categoryCounts = {};
+  const entries = Object.entries(recipeSet || {});
+
+  if (entries.length === 0) errors.push('no recipes are defined');
+
+  for (const [id, recipe] of entries) {
+    if (!recipe || typeof recipe !== 'object') {
+      errors.push(`${id}: recipe must be an object`);
+      continue;
+    }
+
+    for (const field of requiredFields) {
+      if (typeof recipe[field] !== 'string' || !recipe[field].trim()) {
+        errors.push(`${id}: missing required field "${field}"`);
+      }
+    }
+
+    if (typeof recipe.category === 'string' && recipe.category.trim()) {
+      categoryCounts[recipe.category] = (categoryCounts[recipe.category] || 0) + 1;
+      if (!Object.prototype.hasOwnProperty.call(recipeCategories, recipe.category)) {
+        errors.push(`${id}: unregistered category "${recipe.category}"`);
+      }
+    }
+
+    if (typeof recipe.template !== 'string') continue;
+
+    if (!recipe.template.includes('{{task}}')) {
+      errors.push(`${id}: template must contain {{task}}`);
+    }
+
+    const placeholders = [...recipe.template.matchAll(/\{\{([^{}]*)\}\}/g)];
+    const openMarkers = (recipe.template.match(/\{\{/g) || []).length;
+    if (openMarkers !== placeholders.length) {
+      errors.push(`${id}: template contains an unmatched {{ placeholder marker`);
+    }
+
+    for (const match of placeholders) {
+      const raw = match[0];
+      const name = match[1].trim();
+      if (!knownPlaceholders.has(name)) {
+        errors.push(`${id}: unrecognized placeholder ${raw}`);
+      } else if (raw !== `{{${name}}}`) {
+        errors.push(`${id}: placeholder ${raw} must use the exact {{${name}}} form`);
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    recipeCount: entries.length,
+    categoryCount: Object.keys(categoryCounts).length,
+    categories: categoryCounts,
+    errors
+  };
+}
+
+module.exports = { recipes, recipeCategories, getRecipe, listRecipes, renderRecipe, validateRecipes };

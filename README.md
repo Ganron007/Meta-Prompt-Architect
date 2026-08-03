@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.0-ffb224?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
   <img src="https://img.shields.io/badge/tests-17_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
@@ -72,6 +72,9 @@ node src/cli.js --pipe claude --agent claude --task "Refactor the API layer"
 
 # Web UI
 node src/cli.js --serve
+
+# Validate the bundled recipe catalog
+node src/cli.js --validate-recipes
 ```
 
 ## One-Shot Recipes
@@ -126,6 +129,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0â
 | `--pipe` | Send to agent CLI: `cursor`, `claude`, `opencode` |
 | `--history` | List prompt history |
 | `--score` | Score the generated prompt against a 6-dimension quality rubric |
+| `--validate-recipes` | Validate recipe fields, categories, and placeholders |
 | `--json` | Machine-readable output |
 | `--serve` | Start web UI |
 

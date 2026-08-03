@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-03
+
 ### Added
 - **Prompt quality scoring** (`src/scorer.js`): rule-based, offline rubric that
   grades every generated prompt on six dimensions (1–10 each) — Specificity,
@@ -17,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/api/generate` now returns a `score` object for template and consult modes.
 - Web UI output header shows a colored grade chip (`B · 80%`) with a hover
   tooltip listing per-dimension scores; chip resets on Clear.
+- `--validate-recipes` validates all bundled recipes for required fields,
+  registered categories, required `{{task}}` interpolation, and supported
+  placeholders.
 
 ## [1.3.0] - 2026-08-03
 

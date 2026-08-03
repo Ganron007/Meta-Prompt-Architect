@@ -1,6 +1,6 @@
 {
   "name": "meta-prompt-architect",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "A prompt generator and exporter for Cursor, OpenCode, VS Code, and other AI agents.",
   "main": "src/generator.js",
   "repository": {

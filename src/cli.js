@@ -4,7 +4,7 @@ const { generate } = require('./generator');
 const { consultArchitect } = require('./architect');
 const { exportPrompt } = require('./exporters');
 const { loadEnvChain, resolveLLM } = require('./config');
-const { listRecipes } = require('./recipes');
+const { listRecipes, recipeCategories, validateRecipes } = require('./recipes');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -43,6 +43,7 @@ Options:
   --out <dir>                                       Output directory (default: ./out)
   --json                                            Machine-readable JSON output
   --score                                           Score prompt quality (6-dimension rubric)
+  --validate-recipes                                Validate recipe fields, categories, and placeholders
   --scan                                            Print the scanned project context and exit
   --history                                         List prompt history
   --history-get <id>                                Show a specific prompt from history
@@ -69,7 +70,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--pipe', '--export', '--name', '--out', '--json', '--score', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -102,6 +103,7 @@ function parseArgs(argv) {
       case '--out': args.out = argv[++i]; break;
       case '--json': args.json = true; break;
       case '--score': args.score = true; break;
+      case '--validate-recipes': args.validateRecipes = true; break;
       case '--scan': args.scan = true; break;
       case '--history': args.history = true; break;
       case '--history-get': args.historyGet = argv[++i]; break;
@@ -121,8 +123,21 @@ async function main() {
   if (args.help) { printUsage(); process.exit(0); }
   if (args.serve) { require('./server').start(); return; }
 
+  if (args.validateRecipes) {
+    const report = validateRecipes();
+    if (args.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else if (report.valid) {
+      console.log(`Recipe validation passed: ${report.recipeCount} recipes across ${report.categoryCount} registered categories.`);
+    } else {
+      console.error(`Recipe validation failed: ${report.errors.length} issue${report.errors.length === 1 ? '' : 's'} across ${report.recipeCount} recipes.`);
+      for (const error of report.errors) console.error(`  - ${error}`);
+    }
+    if (!report.valid) process.exitCode = 1;
+    return;
+  }
+
   if (args.recipes) {
-    const cats = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', dfir: 'DFIR — Digital Forensics & Incident Response', 'reverse-eng': 'Reverse Engineering', malware: 'Malware Analysis', aisec: 'AI / ML Security', redteam: 'Red Team Operations', blueteam: 'Blue Team / Detection Engineering', cloudsec: 'Cloud Security', appsec: 'Application Security', osint: 'OSINT / Threat Intelligence', crypto: 'Cryptography', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
     const grouped = {};
     for (const r of listRecipes()) {
       const cat = r.category || 'build';
@@ -131,7 +146,7 @@ async function main() {
     }
     console.log('\nAvailable one-shot recipes:\n');
     for (const [cat, items] of Object.entries(grouped)) {
-      console.log(`  ── ${cats[cat] || cat} ${'─'.repeat(Math.max(0, 44 - (cats[cat] || cat).length))}\n`);
+      console.log(`  ── ${recipeCategories[cat] || cat} ${'─'.repeat(Math.max(0, 44 - (recipeCategories[cat] || cat).length))}\n`);
       for (const r of items) {
         console.log(`  ${r.id.padEnd(22)} ${r.label}`);
         console.log(`  ${''.padEnd(22)} ${r.tagline}\n`);
