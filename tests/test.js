@@ -12,6 +12,7 @@ const { buildPlaybook, getPlatform } = require('../src/platforms');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('../src/history');
 const { scorePrompt, formatScore } = require('../src/scorer');
 const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('../src/custom-recipes');
+const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src/chain');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -330,6 +331,40 @@ async function testCustomRecipes() {
   console.log('custom recipes: OK');
 }
 
+async function testChaining() {
+  assert.throws(() => parseChain('only-one'), /at least two/, 'single recipe chain rejected');
+  const ids = parseChain('prd-then-build, saas-starter ,readme-driven');
+  assert.deepStrictEqual(ids, ['prd-then-build', 'saas-starter', 'readme-driven'], 'chain ids parsed and trimmed');
+  assert.throws(() => buildChain(['prd-then-build', 'nope']), /Unknown recipe in chain: "nope" \(step 2\)/, 'unknown chain recipe rejected with position');
+  const chain = buildChain(ids);
+  assert.strictEqual(chain.length, 3);
+  assert.strictEqual(chain[0].position, 1);
+
+  const first = chainPreamble(chain, 0);
+  const middle = chainPreamble(chain, 1);
+  const last = chainPreamble(chain, 2);
+  assert(first.includes('step 1 of 3'), 'preamble states position');
+  assert(first.includes('first step'), 'first step has no handoff in');
+  assert(first.includes('saas-starter'), 'first step hands off to second');
+  assert(middle.includes('prd-then-build') && middle.includes('readme-driven'), 'middle step references both neighbors');
+  assert(middle.includes('Handoff Summary'), 'middle step requires handoff summary');
+  assert(last.includes('final step'), 'last step flagged');
+  for (const p of [first, middle, last]) {
+    assert(p.includes('Quality gate'), 'every step has a quality gate');
+    assert(p.includes('Context carryover'), 'every step has carryover rules');
+  }
+
+  const wrapped = wrapChainStep(chain, 0, 'PROMPT BODY');
+  assert(wrapped.startsWith('═══ CHAIN STEP 1/3 — prd-then-build'), 'wrap adds step header');
+  assert(wrapped.includes('PROMPT BODY'), 'wrap keeps prompt body');
+
+  const prompt = await generate({ agent: 'cursor', task: 'kanban app', recipe: chain[0].id });
+  const full = wrapChainStep(chain, 0, prompt);
+  assert(full.includes('Platform Playbook'), 'chained prompt keeps platform playbook');
+  assert(full.includes('kanban app'), 'chained prompt keeps task');
+  console.log('chaining: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -349,6 +384,7 @@ async function main() {
   await testBatchGeneration();
   await testScorer();
   await testCustomRecipes();
+  await testChaining();
   console.log('All tests passed.');
 }
 

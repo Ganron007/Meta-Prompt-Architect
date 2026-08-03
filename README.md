@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-18_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-19_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -38,6 +38,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt |
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
+| **Prompt Chaining** | `--chain id1,id2,...` links recipes into pipelines with handoff instructions, context carryover, and quality gates per step |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
 | **Direct Piping** | Send prompts straight to Cursor, Claude Code, or OpenCode CLI |
@@ -122,6 +123,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--rewrite` | Polish raw input via rules or LLM |
 | `--consult` | LLM authors the prompt with project grounding |
 | `--recipe` | Use a one-shot recipe |
+| `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` |
 | `--recipes` | List all recipes |
 | `--provider` | `openai`, `deepseek`, `anthropic`, `ollama`, `openai-compatible`, `mimo` |
 | `--model` | LLM model name |
@@ -180,6 +182,7 @@ src/
 ├── platforms.js     # Platform playbooks (9 agents)
 ├── recipes.js       # 111 one-shot recipes
 ├── custom-recipes.js # Custom recipe builder (build/validate/save/load)
+├── chain.js         # Prompt chain handoffs + quality gates
 ├── scorer.js        # Prompt quality rubric scorer
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent CLI piping

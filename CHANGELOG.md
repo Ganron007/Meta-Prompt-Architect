@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Prompt chaining** (`src/chain.js`): `--chain id1,id2,...` links recipes into
+  an ordered pipeline. Each step's prompt is wrapped in a Chain Context section
+  with handoff-in/handoff-out instructions, context carryover rules (task,
+  constraints, decisions, artifacts, risks), and a quality gate checklist.
+  Works with bundled and custom recipes, batch agents, `--score`, `--json`,
+  and `--export` (files get `-stepN-id` suffixes).
 - **Custom Recipe Builder** (`src/custom-recipes.js`): define reusable prompt
   patterns with role, workflow steps, hard rules, output format, and custom
   placeholders. Saved recipes are validated (required fields, registered
@@ -23,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Web UI recipe builder panel: form with live preview (`/api/recipes/preview`)
   and save; recipe dropdown marks custom recipes; per-recipe input fields
   appear for custom placeholders.
+
+### Fixed
+- Batch `--export` previously wrote every agent's prompt to the same filename;
+  multi-result runs now write one file per result with a distinguishing suffix.
 
 ## [1.4.0] - 2026-08-03
 

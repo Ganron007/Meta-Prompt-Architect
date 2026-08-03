@@ -6,6 +6,7 @@ const { exportPrompt } = require('./exporters');
 const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes, recipeCategories, validateRecipes } = require('./recipes');
 const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('./custom-recipes');
+const { parseChain, buildChain, wrapChainStep } = require('./chain');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -38,6 +39,7 @@ Options:
   --api-key <key>                                  API key (or set env var)
   --api-base <url>                                Custom API base URL
   --recipe <name>                                 Use a proven one-shot recipe (see --recipes)
+  --chain <id1,id2,...>                           Link recipes into a chain with handoffs and quality gates
   --recipes                                         List available recipes and exit
   --create-recipe                                  Build and save a custom recipe (see recipe options below)
   --recipe-name <text>                             Custom recipe name
@@ -86,7 +88,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -108,6 +110,7 @@ function parseArgs(argv) {
       case '--rewrite': args.rewrite = true; break;
       case '--consult': args.consult = true; break;
       case '--recipe': args.recipe = argv[++i]; break;
+      case '--chain': args.chain = argv[++i]; break;
       case '--recipes': args.recipes = true; break;
       case '--create-recipe': args.createRecipe = true; break;
       case '--recipe-name': args.recipeName = argv[++i]; break;
@@ -268,9 +271,19 @@ async function main() {
   const variables = parseVariables(args.vars || args.variables);
 
   const agentList = args.agents ? args.agents.split(',').map(a => a.trim()).filter(Boolean) : [args.agent || 'generic'];
+  const chain = args.chain ? buildChain(parseChain(args.chain), customRecipes) : null;
+  if (chain && args.consult) console.error('[chain] --consult ignored: chains run in recipe mode.');
 
   const results = [];
   for (const agent of agentList) {
+    if (chain) {
+      for (let i = 0; i < chain.length; i++) {
+        const agentArgs = { ...args, agent, variables, customRecipes, recipe: chain[i].id };
+        const prompt = await generate(agentArgs);
+        results.push({ agent, mode: 'chain', prompt: wrapChainStep(chain, i, prompt), chainStep: chain[i], chainSize: chain.length, score: args.score ? scorePrompt(prompt, { agent }) : null });
+      }
+      continue;
+    }
     const agentArgs = { ...args, agent, variables, customRecipes };
     let prompt;
     let mode = 'template';
@@ -296,8 +309,8 @@ async function main() {
     results.push({ agent, mode, prompt, score: args.score ? scorePrompt(prompt, { agent }) : null });
   }
 
-  for (const { agent, mode, prompt } of results) {
-    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, includeExamples: args.includeExamples, recipe: args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
+  for (const { agent, mode, prompt, chainStep } of results) {
+    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
   }
 
   if (args.pipe) {
@@ -311,34 +324,37 @@ async function main() {
   if (args.export) {
     const outDir = path.resolve(args.out);
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-    for (const { agent, prompt } of results) {
+    for (const { agent, prompt, chainStep } of results) {
       const { ext, content } = exportPrompt(prompt, args.export, args.name);
       const safeName = String(args.name || 'generated-prompt').replace(/[^a-zA-Z0-9._-]/g, '_');
-      const filePath = path.join(outDir, `${safeName}${ext}`);
+      const suffix = results.length > 1
+        ? '-' + String(chainStep ? `step${chainStep.position}-${chainStep.id}` : agent).replace(/[^a-zA-Z0-9._-]/g, '_')
+        : '';
+      const filePath = path.join(outDir, `${safeName}${suffix}${ext}`);
       fs.writeFileSync(filePath, content, 'utf-8');
       if (!args.json) console.log(`Generated ${args.export} file: ${filePath}`);
     }
   }
 
   if (args.json) {
+    const toJson = r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain, ...(r.chainStep ? { chainStep: r.chainStep, chainSize: r.chainSize } : {}), ...(r.score ? { score: r.score } : {}) });
     if (results.length === 1) {
-      const { agent, mode, prompt, score } = results[0];
-      console.log(JSON.stringify({ mode, prompt, agent, domain: args.domain, ...(score ? { score } : {}) }, null, 2));
+      console.log(JSON.stringify(toJson(results[0]), null, 2));
     } else {
-      console.log(JSON.stringify(results.map(r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain, ...(r.score ? { score: r.score } : {}) })), null, 2));
+      console.log(JSON.stringify(results.map(toJson), null, 2));
     }
   } else {
     if (results.length === 1) {
       console.log('\n--- Generated Prompt ---\n');
       console.log(results[0].prompt);
     } else {
-      for (const { agent, prompt } of results) {
-        console.log(`\n=== ${agent.toUpperCase()} ===\n`);
+      for (const { agent, prompt, chainStep, chainSize } of results) {
+        console.log(chainStep ? `\n=== ${agent.toUpperCase()} · STEP ${chainStep.position}/${chainSize} ===\n` : `\n=== ${agent.toUpperCase()} ===\n`);
         console.log(prompt);
       }
     }
-    for (const { agent, score } of results) {
-      if (score) console.error(`${results.length > 1 ? `[${agent}] ` : ''}${formatScore(score)}`);
+    for (const { agent, score, chainStep } of results) {
+      if (score) console.error(`${results.length > 1 ? `[${chainStep ? `step${chainStep.position}:` : ''}${agent}] ` : ''}${formatScore(score)}`);
     }
   }
 }
