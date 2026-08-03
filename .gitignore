@@ -1,6 +1,7 @@
 node_modules/
 out/
 dist/
+internal/
 *.log
 .DS_Store
 .vscode/
