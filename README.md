@@ -131,27 +131,32 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--task` | Task description (required) |
 | `--context` | Additional background |
 | `--constraints` | Rules to enforce |
-| `--project` | Project directory to scan (default: cwd) |
+| `--project` | Project directory to scan (default: cwd); `--no-project` skips scanning |
 | `--format` | `markdown`, `json`, `table`, `code`, `diagram`, `text` |
 | `--tone` | `professional`, `casual`, `strict` |
 | `--lang` | Template scaffolding language: `en`, `es`, `ja`, `zh` |
+| `--examples` | Include examples in the prompt |
 | `--rewrite` | Polish raw input via rules or LLM |
 | `--consult` | LLM authors the prompt with project grounding (`--stream` for live tokens) |
+| `--scan` | Print the scanned project context and exit |
 | `--recipe` | Use a one-shot recipe |
 | `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` |
 | `--recipes` | List all recipes |
 | `--provider` | `openai`, `deepseek`, `anthropic`, `ollama`, `openai-compatible`, `mimo` |
 | `--model` | LLM model name |
 | `--api-key` | API key (or env var) |
-| `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `vscode`, `custom-gpt`, `markdown` |
+| `--api-base` | Custom API base URL (for `openai-compatible`) |
+| `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `opencode-jsonc`, `vscode`, `custom-gpt`, `antigravity`, `markdown` |
+| `--name` / `--out` | Output file name and directory (default: `./out`) |
 | `--pipe` | Send to agent: `cursor`, `claude`, `opencode`, `aider`, `windsurf`, `continue`, `cody`, `copilot` |
-| `--history` | List prompt history |
+| `--history` | List prompt history; `--history-get <id>`, `--history-replay <id>`, `--history-clear` |
 | `--history-diff` | Diff two history prompts and their configs: `--history-diff id1 id2` |
 | `--score` | Score the generated prompt against a 6-dimension quality rubric |
 | `--test` | Run the prompt against an LLM and evaluate the response (`--expect csv`, `--no-judge`, `--show-response`) |
 | `--validate-recipes` | Validate recipe fields, categories, and placeholders |
 | `--create-recipe` | Build + save a custom recipe (use `--recipe-name/-category/-role/-steps/-rules/-output/-placeholders`) |
 | `--recipe-scope` | Save custom recipes to `project` (`.mpa/recipes/`) or `user` (`~/.mpa/recipes/`) |
+| `--recipe-dir` | Explicit custom recipe directory (load or save); `--overwrite-recipe` replaces existing |
 | `--import-recipe` | Import a recipe pack from a file, URL, or GitHub Gist |
 | `--export-pack` | Export a category (or `all`) as a shareable recipe pack JSON |
 | `--share-pack` | Publish a recipe pack to a GitHub Gist (needs `GITHUB_TOKEN`) |
@@ -159,12 +164,12 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--vars` | JSON object with values for a custom recipe's extra placeholders |
 | `--json` | Machine-readable output |
 | `--analytics` | Usage analytics summary (top agents, recipes, quality trend) |
-| `--plugins` | List loaded plugins (from `.mpa/plugins/` / `~/.mpa/plugins/`) |
+| `--plugins` | List loaded plugins (from `.mpa/plugins/` / `~/.mpa/plugins/`; `--plugin-dir` overrides) |
 | `--enhance-with` | Apply plugin enhancers to inputs: `--enhance-with id1,id2` |
 | `--scanner` | Use a plugin scanner for project context (also in `--consult`) |
 | `--templatize` | Reverse-engineer a prompt file into a recipe (`-` reads stdin; `--offline` for heuristics) |
 | `--profile` | Load a saved config profile (explicit CLI flags override it) |
-| `--save-profile` | Save current config as a profile; `--profiles` lists all saved |
+| `--save-profile` | Save current config as a profile; `--profiles` lists all saved; `--profile-dir` overrides |
 | `--serve` | Start web UI |
 
 </details>
@@ -179,6 +184,11 @@ Full-viewport drafting console. Binds to `127.0.0.1` (set `HOST`/`PORT` to overr
 
 - Recipe dropdown with category grouping and task hints
 - Platform capability chips on agent selection
+- Custom recipe builder wizard (saves to `.mpa/recipes/`)
+- Quality score chip (grade + per-dimension tooltip) on every forged prompt
+- Streaming toggle for consult mode (token-by-token output)
+- History modal with two-version side-by-side diff
+- Stats dashboard (top agents/recipes, quality trend, test pass rate)
 - Dark/light theme toggle (persisted)
 - Ctrl+Enter to forge, Share button for URL-encoded configs
 - Live status strip with word count and engine badge
@@ -195,7 +205,8 @@ cp .env.example .env
 | Anthropic | `ANTHROPIC_API_KEY` |
 | DeepSeek | `DEEPSEEK_API_KEY` |
 | MiMo | `MIMO_API_KEY` |
-| Ollama | *(no key — local on `:11434`)* |
+| Ollama | *(no key — local on `:11434`; `OLLAMA_BASE_URL` to override)* |
+| GitHub | `GITHUB_TOKEN` *(only for `--share-pack` / Gist imports)* |
 
 ## Project Structure
 
@@ -228,6 +239,11 @@ src/
 ├── enhancer.js      # Input polishing
 ├── templates.js     # Agent/domain profiles
 └── exporters.js     # 10 export formatters
+
+public/
+├── index.html       # Web UI shell
+├── app.js           # Web UI logic (forge, stream, history/diff, stats)
+└── style.css        # Web UI theme
 ```
 
 ## Research Foundations
