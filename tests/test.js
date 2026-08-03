@@ -712,6 +712,37 @@ function testProfiles() {
   console.log('profiles: OK');
 }
 
+async function testOfflineTemplateMode() {
+  const originalFetch = globalThis.fetch;
+  const originalHttpGet = require('http').get;
+  let networkTouched = false;
+  globalThis.fetch = () => { networkTouched = true; return Promise.reject(new Error('network disabled')); };
+  require('http').get = (...a) => { networkTouched = true; return originalHttpGet(...a); };
+  try {
+    const prompt = await generate({ agent: 'cursor', domain: 'security', task: 'offline check', context: 'no network', constraints: 'none' });
+    assert(prompt.includes('offline check'), 'template generation offline');
+    const recipePrompt = await generate({ agent: 'claude', task: 'offline recipe', recipe: 'dfir-log-analysis' });
+    assert(recipePrompt.includes('offline recipe'), 'recipe generation offline');
+    const chain = buildChain(['prd-then-build', 'saas-starter']);
+    assert(chain.length === 2, 'chain building offline');
+    const pack = exportPack({ category: 'crypto' });
+    assert(pack.recipes.length === 3, 'pack export offline');
+    const score = scorePrompt(prompt, { agent: 'cursor' });
+    assert(score.total > 0, 'scoring offline');
+    const diff = diffLines(prompt, recipePrompt);
+    assert(diff.length > 0, 'diff offline');
+    const evaluation = evaluateResponse('# A\n\n- one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen', { outputFormat: 'markdown' });
+    assert(evaluation.verdict === 'pass', 'response evaluation offline');
+    const t = getStrings('es');
+    assert(t.contextHeading.includes('Contexto'), 'i18n offline');
+    assert.strictEqual(networkTouched, false, 'template mode makes zero network calls');
+  } finally {
+    globalThis.fetch = originalFetch;
+    require('http').get = originalHttpGet;
+  }
+  console.log('offline template mode: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -742,6 +773,7 @@ async function main() {
   await testPlugins();
   await testTemplatize();
   testProfiles();
+  await testOfflineTemplateMode();
   console.log('All tests passed.');
 }
 
