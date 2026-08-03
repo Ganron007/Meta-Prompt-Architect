@@ -391,7 +391,7 @@ async function loadMeta() {
     const res = await fetch('/api/meta');
     state.meta = await res.json();
     const sel = $('recipe');
-    const catLabels = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
+    const catLabels = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', dfir: 'DFIR — Forensics & IR', 'reverse-eng': 'Reverse Engineering', malware: 'Malware Analysis', aisec: 'AI / ML Security', redteam: 'Red Team Operations', blueteam: 'Blue Team / Detection', cloudsec: 'Cloud Security', appsec: 'Application Security', osint: 'OSINT / Threat Intel', crypto: 'Cryptography', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
     const grouped = {};
     for (const r of state.meta.recipes) {
       const cat = r.category || 'build';

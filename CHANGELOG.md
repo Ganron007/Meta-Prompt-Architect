@@ -14,10 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark output sheet by default (no more white flash) with a persisted
   light/dark theme toggle in the top bar.
 - Per-pane Clear buttons: inputs (task/context/constraints) and output.
-- **Recipe book** (`--recipe` / `--recipes`): 49 proven one-shot mega-prompt
-  patterns across 6 categories — Software Build (8), Cybersecurity (18),
-  Security Research Lab Methodology (4), AI/Agentic Frameworks (10),
-  AI × Cybersecurity (6), AI × Operations (3).
+- **Recipe book** (`--recipe` / `--recipes`): 111 proven one-shot mega-prompt
+  patterns across 16 categories — Software Build (8), Cybersecurity (18),
+  Security Research Lab Methodology (4), DFIR (8), Reverse Engineering (8),
+  Malware Analysis (8), AI/ML Security (8), Red Team Operations (8),
+  Blue Team / Detection Engineering (6), Cloud Security (5),
+  Application Security (4), OSINT / Threat Intelligence (4), Cryptography (3),
+  AI/Agentic Frameworks (10), AI × Cybersecurity (6), AI × Operations (3).
   Grouped by category in CLI and as optgroups in the web UI dropdown.
 - **Security Research Orchestrator** recipes: full 8-phase-gate methodology
   (G0–G7) with evidence ledgers, adversarial audit, multi-agent policy,

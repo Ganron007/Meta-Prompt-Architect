@@ -116,11 +116,21 @@ function testConfig() {
 
 function testRecipes() {
   const list = listRecipes();
-  assert(list.length >= 49, `expected at least 49 recipes, got ${list.length}`);
+  assert(list.length >= 111, `expected at least 111 recipes, got ${list.length}`);
   const categories = new Set(list.map(r => r.category));
   assert(categories.has('build'), 'should have build category');
   assert(categories.has('security'), 'should have security category');
   assert(categories.has('sec-research'), 'should have sec-research category');
+  assert(categories.has('dfir'), 'should have dfir category');
+  assert(categories.has('reverse-eng'), 'should have reverse-eng category');
+  assert(categories.has('malware'), 'should have malware category');
+  assert(categories.has('aisec'), 'should have aisec category');
+  assert(categories.has('redteam'), 'should have redteam category');
+  assert(categories.has('blueteam'), 'should have blueteam category');
+  assert(categories.has('cloudsec'), 'should have cloudsec category');
+  assert(categories.has('appsec'), 'should have appsec category');
+  assert(categories.has('osint'), 'should have osint category');
+  assert(categories.has('crypto'), 'should have crypto category');
   assert(categories.has('ai'), 'should have ai category');
   assert(categories.has('ai-security'), 'should have ai-security category');
   assert(categories.has('ai-ops'), 'should have ai-ops category');
@@ -143,6 +153,12 @@ function testRecipes() {
   const labBuild = renderRecipe('sec-research-build', { task: 'Build a SQLi lab', context: '', constraints: '' });
   assert(labBuild.includes('LAB_BUILD'), 'sec-research-build should set LAB_BUILD mode');
   assert(labBuild.includes('DESIGNED_LAB'), 'LAB_BUILD should set DESIGNED_LAB mutation policy');
+  const dfirRecipe = renderRecipe('dfir-memory-forensics', { task: 'Analyze RAM dump from compromised server', context: '', constraints: '' });
+  assert(dfirRecipe.includes('Analyze RAM dump from compromised server'), 'DFIR recipe should interpolate task');
+  assert(dfirRecipe.includes('process'), 'DFIR memory recipe should cover process analysis');
+  const cryptoRecipe = renderRecipe('crypto-implementation-review', { task: 'Review AES usage in auth service', context: '', constraints: '' });
+  assert(cryptoRecipe.includes('Review AES usage in auth service'), 'crypto recipe should interpolate task');
+  assert(cryptoRecipe.includes('Key management'), 'crypto recipe should cover key management');
   assert(renderRecipe('nonexistent', { task: 'x' }) === null, 'unknown recipe returns null');
   console.log('recipes: OK');
 }

@@ -119,7 +119,7 @@ async function main() {
   if (args.serve) { require('./server').start(); return; }
 
   if (args.recipes) {
-    const cats = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
+    const cats = { build: 'Software Build', security: 'Cybersecurity', 'sec-research': 'Security Research (Lab Methodology)', dfir: 'DFIR — Digital Forensics & Incident Response', 'reverse-eng': 'Reverse Engineering', malware: 'Malware Analysis', aisec: 'AI / ML Security', redteam: 'Red Team Operations', blueteam: 'Blue Team / Detection Engineering', cloudsec: 'Cloud Security', appsec: 'Application Security', osint: 'OSINT / Threat Intelligence', crypto: 'Cryptography', ai: 'AI / Agentic Frameworks', 'ai-security': 'AI × Cybersecurity', 'ai-ops': 'AI × Operations' };
     const grouped = {};
     for (const r of listRecipes()) {
       const cat = r.category || 'build';

@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/version-1.2.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
   <img src="https://img.shields.io/badge/tests-16_passing-3ad9b5?style=flat-square" alt="tests"/>
-  <img src="https://img.shields.io/badge/recipes-49-ffb224?style=flat-square" alt="recipes"/>
+  <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
 
@@ -34,7 +34,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | | |
 |---|---|
 | **Platform Playbooks** | Agent-specific instructions exploiting each platform's modes, context features, multi-agent support, and terminal access |
-| **49 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, security research, AI/agentic, and cross-domain integration |
+| **111 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, and AI/agentic frameworks |
 | **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
@@ -75,13 +75,23 @@ node src/cli.js --serve
 
 ## One-Shot Recipes
 
-49 proven patterns across 6 categories. List them with `--recipes`:
+111 proven patterns across 16 categories. List them with `--recipes`:
 
 | Category | Count | Examples |
 |---|---|---|
 | **Software Build** | 8 | `readme-driven`, `one-shot-game`, `fullstack-app`, `prd-then-build`, `saas-starter`, `clone-builder` |
 | **Cybersecurity** | 18 | `pentest-report`, `threat-model`, `malware-analysis`, `red-team-plan`, `exploit-dev`, `forensic-analysis` |
 | **Security Research** | 4 | `sec-research-solve`, `sec-research-build`, `sec-research-hunt`, `sec-research-validate` |
+| **DFIR** | 8 | `dfir-disk-forensics`, `dfir-memory-forensics`, `dfir-network-forensics`, `dfir-timeline-analysis`, `dfir-log-analysis` |
+| **Reverse Engineering** | 8 | `re-static-analysis`, `re-dynamic-analysis`, `re-protocol-analysis`, `re-firmware-analysis`, `re-unpacking-deobfuscation` |
+| **Malware Analysis** | 8 | `mal-static-triage`, `mal-dynamic-sandbox`, `mal-behavioral-analysis`, `mal-c2-protocol-analysis`, `mal-yara-rule-writing` |
+| **AI / ML Security** | 8 | `aisec-prompt-injection`, `aisec-adversarial-ml`, `aisec-llm-red-team`, `aisec-ai-supply-chain`, `aisec-ai-agent-security` |
+| **Red Team Operations** | 8 | `rt-initial-access`, `rt-persistence`, `rt-privilege-escalation`, `rt-lateral-movement`, `rt-c2-operations` |
+| **Blue Team / Detection** | 6 | `blue-siem-rules`, `blue-threat-hunt`, `blue-alert-triage`, `blue-detection-pipeline`, `blue-purple-team` |
+| **Cloud Security** | 5 | `cloud-aws-audit`, `cloud-azure-audit`, `cloud-k8s-security`, `cloud-container-security`, `cloud-iam-review` |
+| **Application Security** | 4 | `appsec-api-security`, `appsec-mobile-security`, `appsec-sast-dast`, `appsec-secure-sdlc` |
+| **OSINT / Threat Intel** | 4 | `osint-collection`, `osint-actor-profiling`, `osint-ioc-management`, `osint-intel-report` |
+| **Cryptography** | 3 | `crypto-implementation-review`, `crypto-protocol-analysis`, `crypto-pqc-migration` |
 | **AI / Agentic** | 10 | `langgraph-agent`, `langchain-rag`, `crewai-crew`, `autogen-team`, `mcp-server`, `ai-eval-suite` |
 | **AI × Cybersecurity** | 6 | `ai-soc-analyst`, `ai-threat-hunter`, `ai-pentest-crew`, `ai-code-security`, `ai-incident-responder` |
 | **AI × Operations** | 3 | `ai-research-crew`, `ai-devops-agent`, `ai-data-pipeline` |
