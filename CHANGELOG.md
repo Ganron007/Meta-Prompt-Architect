@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Prompt testing framework** (`src/prompt-test.js`): `--test` runs the
+  generated prompt against the configured LLM and evaluates the response —
+  substance check, output-format compliance (JSON parses, table/code/diagram/
+  markdown detection), and `--expect a,b,c` keyword criteria. An LLM-as-judge
+  second pass scores relevance/completeness/formatCompliance 1–10 (skip with
+  `--no-judge`). Report prints to stderr; full result lands in `--json` under
+  `test`. `--show-response` prints the raw test response.
 - **Expanded agent piping** (`src/piping.js`): five new `--pipe` targets —
   `aider` (via `--message-file`), `windsurf` (writes `.windsurfrules`),
   `continue` (writes `.continue/prompts/<name>.prompt` slash command),

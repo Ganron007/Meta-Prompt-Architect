@@ -17,6 +17,7 @@ const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource 
 const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } = require('../src/diff');
 const { getStrings, resolveLang, SUPPORTED_LANGS } = require('../src/i18n');
 const { pipeToAgent, pipeToWindsurf, pipeToContinue, pipeToCody, pipeToCopilot, writeAiderMessageFile } = require('../src/piping');
+const { evaluateResponse, checkFormatCompliance, buildJudgeMessages, parseJudgeResponse, formatTestReport } = require('../src/prompt-test');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -505,6 +506,37 @@ function testPiping() {
   console.log('piping: OK');
 }
 
+function testPromptTesting() {
+  assert(checkFormatCompliance('{"a": 1}', 'json').pass, 'json format passes on valid JSON');
+  assert(checkFormatCompliance('```json\n{"a": 1}\n```', 'json').pass, 'fenced JSON passes');
+  assert(!checkFormatCompliance('not json at all, just prose', 'json').pass, 'json format fails on prose');
+  assert(checkFormatCompliance('| a | b |\n|---|---|', 'table').pass, 'table format detected');
+  assert(!checkFormatCompliance('no table here\njust lines of text', 'table').pass, 'table format rejects prose');
+  assert(checkFormatCompliance('Here is code:\n```js\nx()\n```', 'code').pass, 'code format detected');
+  assert(checkFormatCompliance('# Heading\n- bullet', 'markdown').pass, 'markdown format detected');
+
+  const good = evaluateResponse('# Report\n\n- Finding one with substantial detail about the issue\n- Finding two with even more supporting detail here\n- Finding three concludes the entire analysis properly', { outputFormat: 'markdown', criteria: ['Finding one'] });
+  assert.strictEqual(good.verdict, 'pass', 'good response passes');
+  assert.strictEqual(good.checks.length, 3, 'substance + format + criterion checks');
+  const bad = evaluateResponse('short', { outputFormat: 'json', criteria: ['missing-keyword'] });
+  assert.strictEqual(bad.verdict, 'fail', 'bad response fails');
+  assert(bad.checks.filter(c => !c.pass).length === 3, 'all three checks fail');
+
+  const msgs = buildJudgeMessages('THE PROMPT', 'THE RESPONSE');
+  assert(msgs.length === 2 && msgs[0].role === 'system' && msgs[1].content.includes('THE PROMPT') && msgs[1].content.includes('THE RESPONSE'), 'judge messages built');
+
+  const judged = parseJudgeResponse('{"relevance": 8, "completeness": 7, "formatCompliance": 9, "reasoning": "solid"}');
+  assert(judged.relevance === 8 && judged.formatCompliance === 9, 'judge JSON parsed');
+  const fenced = parseJudgeResponse('```json\n{"relevance": 6, "completeness": 6, "formatCompliance": 6}\n```');
+  assert(fenced.relevance === 6, 'fenced judge JSON parsed');
+  assert.throws(() => parseJudgeResponse('no json here'), /no JSON object/, 'judge non-JSON rejected');
+  assert.throws(() => parseJudgeResponse('{"relevance": 99, "completeness": 5, "formatCompliance": 5}'), /out of range/, 'judge out-of-range rejected');
+
+  const report = formatTestReport({ verdict: 'pass', evaluation: good, judge: judged });
+  assert(report.includes('PASS') && report.includes('relevance 8/10'), 'report renders checks and judge');
+  console.log('prompt testing: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -529,6 +561,7 @@ async function main() {
   await testDiff();
   await testI18n();
   testPiping();
+  testPromptTesting();
   console.log('All tests passed.');
 }
 

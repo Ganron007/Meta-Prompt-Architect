@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-23_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-24_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -37,6 +37,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **111 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, and AI/agentic frameworks |
 | **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt |
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
+| **Prompt Testing** | `--test` runs the prompt against an LLM and evaluates the response — format compliance, `--expect` criteria, LLM-as-judge scores |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
 | **Prompt Chaining** | `--chain id1,id2,...` links recipes into pipelines with handoff instructions, context carryover, and quality gates per step |
 | **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>` |
@@ -137,6 +138,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--history` | List prompt history |
 | `--history-diff` | Diff two history prompts and their configs: `--history-diff id1 id2` |
 | `--score` | Score the generated prompt against a 6-dimension quality rubric |
+| `--test` | Run the prompt against an LLM and evaluate the response (`--expect csv`, `--no-judge`, `--show-response`) |
 | `--validate-recipes` | Validate recipe fields, categories, and placeholders |
 | `--create-recipe` | Build + save a custom recipe (use `--recipe-name/-category/-role/-steps/-rules/-output/-placeholders`) |
 | `--recipe-scope` | Save custom recipes to `project` (`.mpa/recipes/`) or `user` (`~/.mpa/recipes/`) |
@@ -194,6 +196,7 @@ src/
 ├── diff.js          # Line diff + config-change detection
 ├── i18n.js          # Template scaffolding translations (en/es/ja/zh)
 ├── scorer.js        # Prompt quality rubric scorer
+├── prompt-test.js   # LLM response evaluator + judge
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent piping (8 targets)
 ├── llm.js           # Multi-provider LLM client

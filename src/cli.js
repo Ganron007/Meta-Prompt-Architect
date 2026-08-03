@@ -64,7 +64,10 @@ Options:
   --out <dir>                                       Output directory (default: ./out)
   --json                                            Machine-readable JSON output
   --score                                           Score prompt quality (6-dimension rubric)
-  --validate-recipes                                Validate recipe fields, categories, and placeholders
+  --test                                            Run the prompt against an LLM and evaluate the response
+  --expect <csv>                                    Keywords the test response must contain
+  --no-judge                                        Skip the LLM-as-judge scoring pass in --test
+  --show-response                                   Print the raw test response
   --scan                                            Print the scanned project context and exit
   --history                                         List prompt history
   --history-get <id>                                Show a specific prompt from history
@@ -95,7 +98,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -144,6 +147,10 @@ function parseArgs(argv) {
       case '--out': args.out = argv[++i]; break;
       case '--json': args.json = true; break;
       case '--score': args.score = true; break;
+      case '--test': args.test = true; break;
+      case '--expect': args.expect = argv[++i]; break;
+      case '--no-judge': args.noJudge = true; break;
+      case '--show-response': args.showResponse = true; break;
       case '--validate-recipes': args.validateRecipes = true; break;
       case '--scan': args.scan = true; break;
       case '--history': args.history = true; break;
@@ -378,6 +385,37 @@ async function main() {
     addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, lang: args.lang, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
   }
 
+  if (args.test) {
+    const { runPromptTest, formatTestReport } = require('./prompt-test');
+    try {
+      resolveLLM(args);
+    } catch (err) {
+      console.error(`--test skipped: ${err.message}`);
+      args.test = false;
+    }
+    if (args.test) {
+      const criteria = String(args.expect || '').split(',').map(s => s.trim()).filter(Boolean);
+      for (const result of results) {
+        try {
+          result.testResult = await runPromptTest(result.prompt, {
+            provider: args.provider,
+            model: args.model,
+            apiKey: args.apiKey,
+            apiBase: args.apiBase,
+            fallbackModel: args.fallbackModel,
+            outputFormat: args.outputFormat,
+            criteria,
+            judge: !args.noJudge
+          });
+          if (!args.json) console.error(`${results.length > 1 ? `[${result.agent}] ` : ''}${formatTestReport(result.testResult, { showResponse: args.showResponse })}`);
+        } catch (err) {
+          result.testResult = { verdict: 'error', error: err.message };
+          if (!args.json) console.error(`[test] ${result.agent}: test failed — ${err.message}`);
+        }
+      }
+    }
+  }
+
   if (args.pipe) {
     const { pipeToAgent } = require('./piping');
     for (const { agent, prompt } of results) {
@@ -402,7 +440,7 @@ async function main() {
   }
 
   if (args.json) {
-    const toJson = r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain, ...(r.chainStep ? { chainStep: r.chainStep, chainSize: r.chainSize } : {}), ...(r.score ? { score: r.score } : {}) });
+    const toJson = r => ({ mode: r.mode, prompt: r.prompt, agent: r.agent, domain: args.domain, ...(r.chainStep ? { chainStep: r.chainStep, chainSize: r.chainSize } : {}), ...(r.score ? { score: r.score } : {}), ...(r.testResult ? { test: r.testResult } : {}) });
     if (results.length === 1) {
       console.log(JSON.stringify(toJson(results[0]), null, 2));
     } else {
