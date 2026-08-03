@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Collaborative features**: `--share-pack <category|all>` publishes a recipe
+  pack to a GitHub Gist (`GITHUB_TOKEN`/`GH_TOKEN`); the URL imports directly
+  via `--import-recipe`. `--review` opens the generated prompt in `$EDITOR`
+  for edit + approval before anything is exported, piped, or saved to history
+  (non-interactive shells auto-approve). Team recipe library: commit
+  `.mpa/recipes/` to share recipes repo-wide.
 - **Prompt testing framework** (`src/prompt-test.js`): `--test` runs the
   generated prompt against the configured LLM and evaluates the response —
   substance check, output-format compliance (JSON parses, table/code/diagram/

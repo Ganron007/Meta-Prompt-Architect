@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-24_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-25_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -40,7 +40,8 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Prompt Testing** | `--test` runs the prompt against an LLM and evaluates the response — format compliance, `--expect` criteria, LLM-as-judge scores |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
 | **Prompt Chaining** | `--chain id1,id2,...` links recipes into pipelines with handoff instructions, context carryover, and quality gates per step |
-| **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>` |
+| **Recipe Packs** | Share recipes as portable JSON packs — `--export-pack <category>` / `--import-recipe <url|file|gist>`; `--share-pack` publishes to a GitHub Gist |
+| **Review Workflow** | `--review` opens the prompt in `$EDITOR` for edit + approval before it is exported, piped, or saved to history |
 | **Multi-Language** | `--lang es|ja|zh` translates template scaffolding while keeping user content and technical terms intact |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
@@ -72,6 +73,11 @@ node src/cli.js --agents cursor,claude,deepseek --task "Review auth module"
 
 # Export to .cursorrules
 node src/cli.js --agent cursor --task "Review auth" --export cursorrules --out ./
+
+# Share a recipe pack with your team via Gist
+node src/cli.js --share-pack dfir
+
+# Team library: commit .mpa/recipes/ to your repo — everyone gets the recipes
 
 # Pipe directly to Claude Code
 node src/cli.js --pipe claude --agent claude --task "Refactor the API layer"
@@ -144,6 +150,8 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--recipe-scope` | Save custom recipes to `project` (`.mpa/recipes/`) or `user` (`~/.mpa/recipes/`) |
 | `--import-recipe` | Import a recipe pack from a file, URL, or GitHub Gist |
 | `--export-pack` | Export a category (or `all`) as a shareable recipe pack JSON |
+| `--share-pack` | Publish a recipe pack to a GitHub Gist (needs `GITHUB_TOKEN`) |
+| `--review` | Edit + approve the prompt in `$EDITOR` before export/pipe/history |
 | `--vars` | JSON object with values for a custom recipe's extra placeholders |
 | `--json` | Machine-readable output |
 | `--serve` | Start web UI |
@@ -197,6 +205,8 @@ src/
 ├── i18n.js          # Template scaffolding translations (en/es/ja/zh)
 ├── scorer.js        # Prompt quality rubric scorer
 ├── prompt-test.js   # LLM response evaluator + judge
+├── gist.js          # Publish recipe packs to GitHub Gist
+├── review.js        # $EDITOR review + approval gate
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent piping (8 targets)
 ├── llm.js           # Multi-provider LLM client

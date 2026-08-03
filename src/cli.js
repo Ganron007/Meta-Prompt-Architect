@@ -57,6 +57,8 @@ Options:
   --overwrite-recipe                               Replace an existing custom recipe file
   --import-recipe <url|file>                       Import a recipe pack from a file, URL, or GitHub Gist
   --export-pack <category|all>                     Export recipes as a shareable pack JSON (to --out)
+  --share-pack <category|all>                      Publish a recipe pack to a GitHub Gist (needs GITHUB_TOKEN)
+  --review                                          Edit + approve the prompt in $EDITOR before use
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
@@ -98,7 +100,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -136,6 +138,8 @@ function parseArgs(argv) {
       case '--overwrite-recipe': args.overwriteRecipe = true; break;
       case '--import-recipe': args.importRecipe = argv[++i]; break;
       case '--export-pack': args.exportPack = argv[++i]; break;
+      case '--share-pack': args.sharePack = argv[++i]; break;
+      case '--review': args.review = true; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
@@ -223,6 +227,19 @@ async function main() {
     fs.writeFileSync(filePath, `${JSON.stringify(pack, null, 2)}\n`, 'utf8');
     if (args.json) console.log(JSON.stringify(pack, null, 2));
     else console.log(`Exported ${pack.recipes.length} recipe(s) to ${filePath}`);
+    return;
+  }
+
+  if (args.sharePack) {
+    const { publishPackToGist } = require('./gist');
+    const pack = exportPack({ category: args.sharePack, customRecipes });
+    const published = await publishPackToGist(pack, { token: args.gistToken });
+    if (args.json) {
+      console.log(JSON.stringify({ pack: { name: pack.name, count: pack.recipes.length }, ...published }, null, 2));
+    } else {
+      console.log(`Published ${pack.recipes.length} recipe(s) to ${published.url}`);
+      console.log(`Share it: anyone can import with --import-recipe ${published.url}`);
+    }
     return;
   }
 
@@ -379,6 +396,18 @@ async function main() {
     }
 
     results.push({ agent, mode, prompt, score: args.score ? scorePrompt(prompt, { agent }) : null });
+  }
+
+  if (args.review) {
+    const { reviewPrompt } = require('./review');
+    for (const result of results) {
+      const outcome = await reviewPrompt(result.prompt, { question: `Approve prompt for ${result.agent}?` });
+      if (!outcome.approved) {
+        console.error('Aborted by reviewer — nothing exported, piped, or saved to history.');
+        process.exit(1);
+      }
+      result.prompt = outcome.prompt;
+    }
   }
 
   for (const { agent, mode, prompt, chainStep } of results) {

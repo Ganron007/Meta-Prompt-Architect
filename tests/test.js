@@ -18,6 +18,8 @@ const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } 
 const { getStrings, resolveLang, SUPPORTED_LANGS } = require('../src/i18n');
 const { pipeToAgent, pipeToWindsurf, pipeToContinue, pipeToCody, pipeToCopilot, writeAiderMessageFile } = require('../src/piping');
 const { evaluateResponse, checkFormatCompliance, buildJudgeMessages, parseJudgeResponse, formatTestReport } = require('../src/prompt-test');
+const { buildGistPayload } = require('../src/gist');
+const { editInEditor, confirmApproval, reviewPrompt } = require('../src/review');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -537,6 +539,33 @@ function testPromptTesting() {
   console.log('prompt testing: OK');
 }
 
+async function testCollaboration() {
+  const fs = require('fs');
+  const os = require('os');
+  const pack = exportPack({ category: 'crypto' });
+  const payload = buildGistPayload(pack);
+  assert(payload.description.includes('crypto'), 'gist description names the pack');
+  assert.strictEqual(payload.public, false, 'gists default to secret');
+  const gistFile = Object.keys(payload.files)[0];
+  assert(gistFile.endsWith('.json'), 'gist file is JSON');
+  assert(JSON.parse(payload.files[gistFile].content).recipes.length === 3, 'gist embeds the full pack');
+  const named = buildGistPayload(pack, { description: 'custom', public: true });
+  assert(named.description === 'custom' && named.public === true, 'gist options honored');
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-review-'));
+  const reviewFile = path.join(dir, 'review.md');
+  const fakeEditor = `node -e "require('fs').appendFileSync(process.argv[1], '\\nEDITED LINE')"`;
+  const edited = editInEditor('ORIGINAL', { editor: fakeEditor, filePath: reviewFile });
+  assert(edited.includes('ORIGINAL') && edited.includes('EDITED LINE'), 'editor modifications are read back');
+  assert(!fs.existsSync(reviewFile), 'temp review file cleaned up');
+
+  assert.strictEqual(await confirmApproval('test?', Object.create(process.stdin, { isTTY: { value: false } })), true, 'non-TTY auto-approves');
+  const outcome = await reviewPrompt('BASE PROMPT', { editor: fakeEditor, filePath: path.join(dir, 'r2.md'), input: Object.create(process.stdin, { isTTY: { value: false } }) });
+  assert(outcome.approved && outcome.changed && outcome.prompt.includes('EDITED LINE'), 'review flow returns edited + approved');
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('collaboration: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -562,6 +591,7 @@ async function main() {
   await testI18n();
   testPiping();
   testPromptTesting();
+  await testCollaboration();
   console.log('All tests passed.');
 }
 
