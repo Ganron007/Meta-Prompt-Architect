@@ -11,6 +11,7 @@ const { exportPack, importPack } = require('./recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, configChanges } = require('./diff');
 const { recordEvent, loadEvents, summarize, formatAnalytics } = require('./analytics');
 const { loadPlugins } = require('./plugins');
+const { saveProfile, loadProfile, listProfiles, applyProfile } = require('./profiles');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('./history');
 const { scorePrompt, formatScore } = require('./scorer');
 
@@ -66,6 +67,10 @@ Options:
   --plugins                                         List loaded plugins and exit
   --plugin-dir <dir>                                Explicit plugin directory (default: .mpa/plugins + ~/.mpa/plugins)
   --templatize <file|->                             Reverse-engineer an existing prompt into a recipe (- reads stdin)
+  --profile <name>                                  Load a saved config profile (CLI flags override it)
+  --save-profile <name>                             Save the current config as a profile and exit
+  --profiles                                        List saved profiles and exit
+  --profile-dir <dir>                               Explicit profile directory
   --offline                                         Force rule-based fallback (no LLM) for --templatize
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
@@ -108,14 +113,15 @@ Examples:
 }
 
 function parseArgs(argv) {
-  const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--offline', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd(), _provided: new Set() };
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
       console.error(`Warning: unknown option "${arg}" ignored.`);
       continue;
     }
+    if (arg.startsWith('--')) args._provided.add(arg);
     switch (arg) {
       case '--agent': args.agent = argv[++i]; break;
       case '--agents': args.agents = argv[++i]; break;
@@ -154,6 +160,10 @@ function parseArgs(argv) {
       case '--plugins': args.plugins = true; break;
       case '--plugin-dir': args.pluginDir = argv[++i]; break;
       case '--templatize': args.templatize = argv[++i]; break;
+      case '--profile': args.profile = argv[++i]; break;
+      case '--save-profile': args.saveProfile = argv[++i]; break;
+      case '--profiles': args.profiles = true; break;
+      case '--profile-dir': args.profileDir = argv[++i]; break;
       case '--offline': args.offline = true; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
@@ -190,6 +200,34 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.help) { printUsage(); process.exit(0); }
+
+  if (args.profile) {
+    const { profile } = loadProfile(args.profile, { project: args.project, profileDir: args.profileDir });
+    const applied = applyProfile(args, profile.config, args._provided);
+    if (applied.length) console.error(`[profile] "${args.profile}" applied: ${applied.join(', ')} (CLI flags take precedence)`);
+  }
+
+  if (args.saveProfile) {
+    const saved = saveProfile(args.saveProfile, args, { scope: args.recipeScope || 'project', project: args.project, profileDir: args.profileDir, overwrite: args.overwriteRecipe });
+    if (args.json) console.log(JSON.stringify(saved, null, 2));
+    else console.log(`Profile "${args.saveProfile}" saved to ${saved.filePath} (${Object.keys(saved.profile.config).length} config fields)`);
+    return;
+  }
+
+  if (args.profiles) {
+    const found = listProfiles({ project: args.project, profileDir: args.profileDir });
+    if (args.json) {
+      console.log(JSON.stringify(found, null, 2));
+    } else if (found.length) {
+      console.log('\nSaved profiles:');
+      for (const p of found) console.log(`  ${p.name.padEnd(24)} ${p.directory}`);
+      console.log('\nUse with: prompt-architect --profile <name> ...');
+    } else {
+      console.log('No profiles saved yet. Use --save-profile <name> to create one.');
+    }
+    return;
+  }
+
   if (args.serve) { require('./server').start(); return; }
 
   if (args.createRecipe) {

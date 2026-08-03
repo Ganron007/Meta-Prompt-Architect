@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Config profiles** (`src/profiles.js`): `--save-profile <name>` persists the
+  current generation config (agent, domain, format, tone, provider — never API
+  keys or tasks) to `.mpa/profiles/` or `~/.mpa/profiles/`. `--profile <name>`
+  merges it back with explicit CLI flags taking precedence; `--profiles` lists.
 - **Recipe templatize** (`src/templatize.js`): `--templatize <file|->`
   reverse-engineers an existing prompt into a validated custom recipe —
   LLM extraction (role, steps, hard rules, output format, placeholders) with

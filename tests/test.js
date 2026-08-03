@@ -23,6 +23,7 @@ const { editInEditor, confirmApproval, reviewPrompt } = require('../src/review')
 const { recordEvent, loadEvents, summarize: summarizeAnalytics, formatAnalytics } = require('../src/analytics');
 const { loadPlugins, validatePlugin, normalizePlatform } = require('../src/plugins');
 const { heuristicTemplatize, parseTemplatizeResponse, buildTemplatizeMessages, templatizePrompt } = require('../src/templatize');
+const { saveProfile, loadProfile, listProfiles, applyProfile, pickProfileFields } = require('../src/profiles');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -674,6 +675,43 @@ async function testTemplatize() {
   console.log('templatize: OK');
 }
 
+function testProfiles() {
+  const fs = require('fs');
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-profiles-'));
+
+  const picked = pickProfileFields({ agent: 'cursor', domain: 'security', apiKey: 'SECRET', task: 'x', _provided: new Set() });
+  assert(!('apiKey' in picked), 'apiKey never persisted to profiles');
+  assert(!('task' in picked) && !('_provided' in picked), 'task and internals excluded');
+  assert(picked.agent === 'cursor' && picked.domain === 'security', 'config fields picked');
+
+  const saved = saveProfile('sec-review', { agent: 'cursor', domain: 'security', outputFormat: 'table', score: true, apiKey: 'SECRET' }, { profileDir: dir });
+  assert(fs.existsSync(saved.filePath), 'profile written');
+  assert.throws(() => saveProfile('sec-review', {}, { profileDir: dir }), /already exists/, 'duplicate save rejected');
+  assert.throws(() => saveProfile('Bad Name', {}, { profileDir: dir }), /Invalid profile name/, 'bad name rejected');
+
+  const { profile } = loadProfile('sec-review', { profileDir: dir });
+  assert.strictEqual(profile.config.agent, 'cursor', 'profile loads back');
+  assert.throws(() => loadProfile('nope', { profileDir: dir }), /Profile not found/, 'missing profile errors');
+
+  const listed = listProfiles({ profileDir: dir });
+  assert(listed.some(p => p.name === 'sec-review'), 'profile listed');
+
+  const args = { agent: 'claude', _marker: true };
+  const provided = new Set(['--agent']);
+  const applied = applyProfile(args, profile.config, provided);
+  assert.strictEqual(args.agent, 'claude', 'explicit CLI flag wins over profile');
+  assert.strictEqual(args.domain, 'security', 'profile fills unset fields');
+  assert.strictEqual(args.outputFormat, 'table', 'profile fills outputFormat');
+  assert(applied.includes('domain') && !applied.includes('agent'), 'applied list correct');
+
+  const cliArgs = parseArgs(['--agent', 'cursor', '--score', '--task', 'x']);
+  assert(cliArgs._provided.has('--agent') && cliArgs._provided.has('--score') && !cliArgs._provided.has('--domain'), 'parseArgs tracks provided flags');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('profiles: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -703,6 +741,7 @@ async function main() {
   testAnalytics();
   await testPlugins();
   await testTemplatize();
+  testProfiles();
   console.log('All tests passed.');
 }
 
