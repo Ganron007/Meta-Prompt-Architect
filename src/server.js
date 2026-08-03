@@ -45,6 +45,29 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
+app.post('/api/generate/stream', async (req, res) => {
+  const cfg = withCustomRecipes(req.body);
+  if (!cfg.consult) {
+    return res.status(400).json({ error: 'Streaming is only available in consult mode' });
+  }
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive'
+  });
+  const send = data => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  try {
+    resolveLLM(cfg);
+    const result = await consultArchitect({ ...cfg, onToken: token => send({ token }) });
+    const score = scorePrompt(result.prompt, { agent: cfg.agent });
+    recordEvent('generate', { agent: cfg.agent, mode: 'consult', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
+    send({ done: true, prompt: result.prompt, mode: 'consult', scanned: result.scanned, score });
+  } catch (err) {
+    send({ error: err.message });
+  }
+  res.end();
+});
+
 app.post('/api/export', async (req, res) => {
   try {
     const { config, format, name } = req.body;

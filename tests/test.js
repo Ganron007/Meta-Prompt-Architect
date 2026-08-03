@@ -24,6 +24,7 @@ const { recordEvent, loadEvents, summarize: summarizeAnalytics, formatAnalytics 
 const { loadPlugins, validatePlugin, normalizePlatform } = require('../src/plugins');
 const { heuristicTemplatize, parseTemplatizeResponse, buildTemplatizeMessages, templatizePrompt } = require('../src/templatize');
 const { saveProfile, loadProfile, listProfiles, applyProfile, pickProfileFields } = require('../src/profiles');
+const { parseStreamLine, streamRequest, callLLMStream } = require('../src/llm');
 
 async function testGenerator() {
   const prompt = await generate({
@@ -743,6 +744,47 @@ async function testOfflineTemplateMode() {
   console.log('offline template mode: OK');
 }
 
+async function testStreaming() {
+  assert.strictEqual(parseStreamLine('openai', 'data: {"choices":[{"delta":{"content":"Hello"}}]}'), 'Hello', 'openai token parsed');
+  assert.strictEqual(parseStreamLine('openai', 'data: [DONE]'), null, 'DONE sentinel ignored');
+  assert.strictEqual(parseStreamLine('openai', 'data: {"choices":[{"delta":{}}]}'), null, 'empty delta ignored');
+  assert.strictEqual(parseStreamLine('anthropic', 'data: {"type":"content_block_delta","delta":{"text":"World"}}'), 'World', 'anthropic delta parsed');
+  assert.strictEqual(parseStreamLine('anthropic', 'data: {"type":"message_start"}'), null, 'anthropic non-delta ignored');
+  assert.strictEqual(parseStreamLine('ollama', '{"message":{"content":"Hi"},"done":false}'), 'Hi', 'ollama NDJSON parsed');
+  assert.strictEqual(parseStreamLine('ollama', '{"done":true}'), null, 'ollama done ignored');
+  assert.strictEqual(parseStreamLine('openai', 'garbage not json'), null, 'malformed line tolerated');
+
+  const req = streamRequest('openai', 'https://api.test', 'm', 'k', [{ role: 'user', content: 'x' }], 0.5);
+  assert(req.url === 'https://api.test/v1/chat/completions' && req.body.stream === true && req.headers.Authorization === 'Bearer k', 'openai stream request built');
+  const anthReq = streamRequest('anthropic', 'https://api.test', 'm', 'k', [{ role: 'system', content: 's' }, { role: 'user', content: 'u' }], 0.5);
+  assert(anthReq.body.stream === true && anthReq.body.system === 's' && anthReq.body.messages.length === 1, 'anthropic stream request splits system');
+
+  const chunks = [
+    'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
+    'data: {"choices":[{"delta":{"content":" Wor', // split mid-line exercises buffering
+    'ld"}}]}\n\ndata: [DONE]\n\n'
+  ];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    body: new ReadableStream({
+      start(controller) {
+        for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+        controller.close();
+      }
+    })
+  });
+  try {
+    const tokens = [];
+    const full = await callLLMStream('openai', 'm', 'k', 'https://api.test', [{ role: 'user', content: 'x' }], 0.3, { onToken: t => tokens.push(t) });
+    assert.strictEqual(full, 'Hello World', 'stream accumulates full text across split chunks');
+    assert.deepStrictEqual(tokens, ['Hello', ' World'], 'onToken fires per parsed token');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  console.log('streaming: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -774,6 +816,7 @@ async function main() {
   await testTemplatize();
   testProfiles();
   await testOfflineTemplateMode();
+  await testStreaming();
   console.log('All tests passed.');
 }
 

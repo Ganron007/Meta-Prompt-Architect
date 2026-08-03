@@ -101,6 +101,10 @@ async function generate() {
   setStatus(config.consult ? 'Consulting the Architect\u2026' : 'Templating prompt\u2026', 'busy');
 
   try {
+    if (config.consult && $('stream').checked) {
+      await generateStreaming(config, btn, label);
+      return;
+    }
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -147,6 +151,64 @@ async function generate() {
     label.textContent = 'Forge prompt';
     $('paper').parentElement.classList.remove('forging');
   }
+}
+
+async function generateStreaming(config, btn, label) {
+  const out = $('output');
+  out.textContent = '';
+  out.classList.remove('placeholder');
+  replayPaper();
+  const res = await fetch('/api/generate/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Stream failed (${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let final = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split('\n\n');
+    buffer = events.pop();
+    for (const chunk of events) {
+      const line = chunk.split('\n').find(l => l.startsWith('data:'));
+      if (!line) continue;
+      let data;
+      try { data = JSON.parse(line.slice(5).trim()); } catch { continue; }
+      if (data.error) throw new Error(data.error);
+      if (data.token) {
+        out.textContent += data.token;
+        $('outputMeta').textContent = `${wordCount(out.textContent)} words · streaming`;
+      }
+      if (data.done) final = data;
+    }
+  }
+  if (!final) throw new Error('Stream ended without a final prompt.');
+  state.prompt = final.prompt;
+  state.config = config;
+  out.textContent = final.prompt;
+  const meta = $('outputMeta');
+  meta.textContent = `${wordCount(final.prompt)} words · consult`;
+  meta.classList.add('live');
+  const chip = $('scoreChip');
+  if (final.score) {
+    chip.hidden = false;
+    chip.textContent = `${final.score.grade} \u00b7 ${final.score.percent}%`;
+    chip.className = 'score-chip grade-' + final.score.grade.toLowerCase();
+    chip.title = final.score.dimensions.map(d => `${d.label}: ${d.score}/10`).join('\n');
+  }
+  setStatus(final.scanned ? `Forged via consult (streamed) — grounded in ${final.scanned.files.length} files @ ${final.scanned.root}` : 'Forged via consult (streamed).', 'ok');
+  showToast('Prompt forged.');
+  btn.disabled = false;
+  label.textContent = 'Forge prompt';
+  $('paper').parentElement.classList.remove('forging');
 }
 
 async function exportFile() {

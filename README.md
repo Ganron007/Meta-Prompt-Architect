@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.4.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-29_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-31_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -35,7 +35,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 |---|---|
 | **Platform Playbooks** | Agent-specific instructions exploiting each platform's modes, context features, multi-agent support, and terminal access |
 | **111 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, and AI/agentic frameworks |
-| **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt |
+| **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt; `--stream` for token-by-token output |
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
 | **Prompt Testing** | `--test` runs the prompt against an LLM and evaluates the response â€” format compliance, `--expect` criteria, LLM-as-judge scores |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
@@ -136,7 +136,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0â
 | `--tone` | `professional`, `casual`, `strict` |
 | `--lang` | Template scaffolding language: `en`, `es`, `ja`, `zh` |
 | `--rewrite` | Polish raw input via rules or LLM |
-| `--consult` | LLM authors the prompt with project grounding |
+| `--consult` | LLM authors the prompt with project grounding (`--stream` for live tokens) |
 | `--recipe` | Use a one-shot recipe |
 | `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` |
 | `--recipes` | List all recipes |

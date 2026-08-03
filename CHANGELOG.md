@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Streaming consult output** (`src/llm.js`): `--stream` prints consult-mode
+  tokens to the terminal as the Architect writes them (OpenAI-compatible,
+  Anthropic, MiMo, and Ollama SSE/NDJSON parsing with split-chunk buffering).
+  `POST /api/generate/stream` streams SSE events to the web UI, where a
+  "Stream consult output" toggle renders the prompt token by token.
 - **Config profiles** (`src/profiles.js`): `--save-profile <name>` persists the
   current generation config (agent, domain, format, tone, provider — never API
   keys or tasks) to `.mpa/profiles/` or `~/.mpa/profiles/`. `--profile <name>`

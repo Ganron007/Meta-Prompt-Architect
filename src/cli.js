@@ -72,6 +72,7 @@ Options:
   --profiles                                        List saved profiles and exit
   --profile-dir <dir>                               Explicit profile directory
   --offline                                         Force rule-based fallback (no LLM) for --templatize
+  --stream                                          Stream consult-mode tokens to the terminal as they arrive
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
@@ -114,7 +115,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd(), _provided: new Set() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--provider', '--model', '--api-key', '--api-base', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -165,6 +166,7 @@ function parseArgs(argv) {
       case '--profiles': args.profiles = true; break;
       case '--profile-dir': args.profileDir = argv[++i]; break;
       case '--offline': args.offline = true; break;
+      case '--stream': args.stream = true; break;
       case '--vars': args.vars = argv[++i]; break;
       case '--pipe': args.pipe = argv[++i]; break;
       case '--provider': args.provider = argv[++i]; break;
@@ -500,7 +502,9 @@ async function main() {
     if (agentArgs.consult) {
       try {
         resolveLLM(agentArgs);
+        if (args.stream && !args.json) agentArgs.onToken = token => process.stderr.write(token);
         const result = await consultArchitect(agentArgs);
+        if (agentArgs.onToken) process.stderr.write('\n');
         prompt = result.prompt;
         mode = 'consult';
         if (!agentArgs.json && result.scanned && agentList.length === 1) {
