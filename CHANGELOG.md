@@ -5,6 +5,38 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-03
+
+### Added
+- **62 new one-shot recipes across 10 cybersecurity categories** (111 total,
+  up from 49):
+  - DFIR (8): disk forensics, memory forensics, network forensics, timeline
+    analysis, evidence handling, IR automation, threat intel correlation,
+    log analysis
+  - Reverse Engineering (8): static, dynamic, protocol, firmware,
+    unpacking/deobfuscation, binary diffing, vulnerability research,
+    decompiler workflow
+  - Malware Analysis (8): static triage, dynamic sandbox, behavioral,
+    family classification, C2 protocol, packer analysis, YARA rule writing,
+    sandbox evasion
+  - AI/ML Security (8): prompt injection, adversarial ML, model extraction,
+    LLM red team, AI supply chain, model robustness, data poisoning,
+    AI agent security
+  - Red Team Operations (8): initial access, persistence, privilege
+    escalation, lateral movement, exfiltration, C2 operations, cloud
+    exploitation, social engineering
+  - Blue Team / Detection Engineering (6): SIEM rules, threat hunt, alert
+    triage, detection pipeline, EDR tuning, purple team
+  - Cloud Security (5): AWS audit, Azure audit, Kubernetes, container
+    security, IAM review
+  - Application Security (4): API security, mobile security, SAST/DAST,
+    secure SDLC
+  - OSINT / Threat Intelligence (4): collection, actor profiling, IOC
+    management, intel report
+  - Cryptography (3): implementation review, protocol analysis, PQC migration
+- Category labels for all 10 new categories in the CLI `--recipes` listing
+  and the web UI recipe dropdown.
+
 ## [1.2.0] - 2026-07-22
 
 ### Added
@@ -14,13 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark output sheet by default (no more white flash) with a persisted
   light/dark theme toggle in the top bar.
 - Per-pane Clear buttons: inputs (task/context/constraints) and output.
-- **Recipe book** (`--recipe` / `--recipes`): 111 proven one-shot mega-prompt
-  patterns across 16 categories — Software Build (8), Cybersecurity (18),
-  Security Research Lab Methodology (4), DFIR (8), Reverse Engineering (8),
-  Malware Analysis (8), AI/ML Security (8), Red Team Operations (8),
-  Blue Team / Detection Engineering (6), Cloud Security (5),
-  Application Security (4), OSINT / Threat Intelligence (4), Cryptography (3),
-  AI/Agentic Frameworks (10), AI × Cybersecurity (6), AI × Operations (3).
+- **Recipe book** (`--recipe` / `--recipes`): 49 proven one-shot mega-prompt
+  patterns across 6 categories — Software Build (8), Cybersecurity (18),
+  Security Research Lab Methodology (4), AI/Agentic Frameworks (10),
+  AI × Cybersecurity (6), AI × Operations (3).
   Grouped by category in CLI and as optgroups in the web UI dropdown.
 - **Security Research Orchestrator** recipes: full 8-phase-gate methodology
   (G0–G7) with evidence ledgers, adversarial audit, multi-agent policy,

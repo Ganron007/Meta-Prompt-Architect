@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-ffb224?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/badge/version-1.3.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
   <img src="https://img.shields.io/badge/tests-16_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
@@ -168,7 +168,7 @@ src/
 ├── architect.js     # LLM consult mode
 ├── context.js       # Project scanner
 ├── platforms.js     # Platform playbooks (9 agents)
-├── recipes.js       # 49 one-shot recipes
+├── recipes.js       # 111 one-shot recipes
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent CLI piping
 ├── llm.js           # Multi-provider LLM client
