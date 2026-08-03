@@ -68,3 +68,11 @@ You are running on **ChatGPT / GPT** (Chat + API model). Exploit its full capabi
 **Config files:** Custom GPT instructions, Project-level instructions and knowledge files
 **Multi-agent:** No built-in multi-agent — use Custom GPTs as specialized agents and chain outputs between them manually.
 **Terminal access:** No — output complete files for the user to apply.
+
+## Execution Loop (mandatory)
+
+1. **PLAN** — state your approach and the files you will touch before editing anything.
+2. **ACT** — make the smallest coherent change that advances the plan.
+3. **SELF-VERIFY** — you have no terminal access: re-read your output against the requirements and fix gaps before finalizing.
+4. **ITERATE** — if verification fails, diagnose and fix (max 5 loops); never declare success while checks are failing.
+5. **REPORT** — summarize what changed and cite verification evidence (commands run, results observed).

@@ -858,6 +858,40 @@ async function testGoldenRegression() {
   console.log('golden regression: OK');
 }
 
+async function testGroundingLoop() {
+  const { detectCommands } = require('../src/context');
+  const fs = require('fs');
+  const os = require('os');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-ground-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { test: 'node t.js', lint: 'eslint .', build: 'tsc' } }));
+  fs.writeFileSync(path.join(dir, 'README.md'), '# fixture');
+
+  const cmds = detectCommands({ 'package.json': '{"scripts":{"test":"x","lint":"y","build":"z"}}', 'Makefile': 'all: x\n\ntest: pytest\n', 'Cargo.toml': '[package]' });
+  assert(cmds.includes('npm test') && cmds.includes('npm run lint') && cmds.includes('make test') && cmds.includes('cargo test'), `detectCommands: ${cmds}`);
+
+  const scan = scanProject(dir);
+  assert(scan.commands.includes('npm test') && scan.commands.includes('npm run lint'), 'scanProject attaches commands');
+
+  const prompt = await generate({ agent: 'cursor', task: 'fix the parser bug', projectScan: scan });
+  assert(prompt.includes('Project Grounding'), 'template prompt has grounding section');
+  assert(prompt.includes('npm test'), 'grounding includes real verify command');
+  assert(prompt.includes('Execution Loop'), 'template prompt has loop contract');
+  assert(prompt.includes('**PLAN**') && prompt.includes('**VERIFY**') && prompt.includes('**ITERATE**') && prompt.includes('**REPORT**'), 'loop has all phases');
+  assert(prompt.includes('run the project\'s checks and read the output: npm test && npm run lint && npm run build'), 'loop cites concrete commands');
+
+  const recipePrompt = await generate({ agent: 'claude', task: 'snake game', recipe: 'one-shot-game', projectScan: scan });
+  assert(recipePrompt.includes('Project Grounding') && recipePrompt.includes('Execution Loop'), 'recipe path gets grounding + loop');
+
+  const chatPrompt = await generate({ agent: 'deepseek', task: 'explain X', projectScan: scan });
+  assert(chatPrompt.includes('**SELF-VERIFY**'), 'terminal-less agent gets self-verify phase');
+
+  const bare = await generate({ agent: 'cursor', task: 'fix bug' });
+  assert(!bare.includes('Project Grounding'), 'no grounding without a scan');
+  assert(bare.includes('Execution Loop'), 'loop contract always present');
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('grounding + loop: OK');
+}
+
 async function main() {
   await testGenerator();
   await testNoRewritePassthrough();
@@ -891,6 +925,7 @@ async function main() {
   await testOfflineTemplateMode();
   await testStreaming();
   await testIntegrationSweep();
+  await testGroundingLoop();
   await testGoldenRegression();
   console.log('All tests passed.');
 }

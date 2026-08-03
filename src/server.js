@@ -23,7 +23,11 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function withCustomRecipes(config = {}) {
   const project = config.project || process.cwd();
-  return { ...config, customRecipes: loadCustomRecipes({ project, recipeDir: config.recipeDir }), pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, enhanceWith: config.enhanceWith || [] };
+  const out = { ...config, customRecipes: loadCustomRecipes({ project, recipeDir: config.recipeDir }), pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, enhanceWith: config.enhanceWith || [] };
+  if (!config.consult && !config.noProject) {
+    try { out.projectScan = scanProject(project); } catch { /* grounding is best-effort */ }
+  }
+  return out;
 }
 
 app.post('/api/generate', async (req, res) => {

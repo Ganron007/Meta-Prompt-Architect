@@ -29,6 +29,14 @@ You are running on **Cursor** (IDE agent). Exploit its full capabilities:
 **Multi-agent:** Background Agents run parallel tasks in isolated cloud environments; Composer edits multiple files in one pass.
 **Terminal access:** Yes — run builds, tests, and linters after changes.
 
+## Execution Loop (mandatory)
+
+1. **PLAN** — state your approach and the files you will touch before editing anything.
+2. **ACT** — make the smallest coherent change that advances the plan.
+3. **VERIFY** — run the project's tests/linters and read the output; if none exist, ask the user how to verify.
+4. **ITERATE** — if verification fails, diagnose and fix (max 5 loops); never declare success while checks are failing.
+5. **REPORT** — summarize what changed and cite verification evidence (commands run, results observed).
+
 ## Inputs
 - Task: Review API key handling
 - Additional Context: RAG script in REMnux

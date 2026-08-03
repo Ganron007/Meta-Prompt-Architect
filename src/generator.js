@@ -1,6 +1,6 @@
 const templates = require('./templates');
 const { enhanceWithLLM } = require('./enhancer');
-const { buildPlaybook } = require('./platforms');
+const { buildPlaybook, getPlatform } = require('./platforms');
 const { renderRecipe, getRecipe } = require('./recipes');
 const { getStrings } = require('./i18n');
 
@@ -22,6 +22,7 @@ async function generate(config) {
     pluginPlatforms = {},
     pluginEnhancers = {},
     enhanceWith = [],
+    projectScan = null,
     model,
     apiKey,
     apiBase,
@@ -51,6 +52,9 @@ async function generate(config) {
   }
 
   const playbook = buildPlaybook(agent, pluginPlatforms);
+  const t = getStrings(lang);
+  const grounding = buildGrounding(projectScan, t);
+  const loop = buildLoopContract(agent, projectScan, t, pluginPlatforms);
 
   if (recipe && getRecipe(recipe, customRecipes)) {
     const rendered = renderRecipe(recipe, {
@@ -59,12 +63,11 @@ async function generate(config) {
       constraints: enhancedConstraints,
       variables
     }, customRecipes);
-    return `${rendered}\n\n${playbook}`.trim();
+    return [rendered, playbook, grounding, loop].filter(Boolean).join('\n\n').trim();
   }
 
   const agentProfile = templates.agentProfiles[agent] || templates.agentProfiles.generic;
   const domainProfile = templates.domainProfiles[domain] || templates.domainProfiles.general;
-  const t = getStrings(lang);
 
   const role = t.roleLine(agentProfile.title, domainProfile.label);
   const objective = buildObjective(enhancedTask, outputFormat, includeExamples, t);
@@ -72,31 +75,58 @@ async function generate(config) {
   const inputs = buildInputs(enhancedContext, enhancedTask, t);
   const rules = buildRules(enhancedConstraints, agentProfile, tone, t);
 
-  const prompt = `# ${role}
+  const prompt = [`# ${role}`,
 
-${t.contextHeading}
+`${t.contextHeading}
 ${domainProfile.context}
 ${enhancedContext ? '\n' + enhancedContext : ''}
-${rules}
+${rules}`,
 
-${playbook}
+playbook,
 
-${t.inputsHeading}
-${inputs}
+grounding,
 
-${t.objectiveHeading}
-${objective}
+loop,
 
-${t.outputHeading}
-${outputSpec}
+`${t.inputsHeading}
+${inputs}`,
 
-${includeExamples ? buildExamples(domain, agent, t) : ''}
+`${t.objectiveHeading}
+${objective}`,
 
-${t.initHeading}
-${t.initBody}
-`;
+`${t.outputHeading}
+${outputSpec}`,
 
-  return prompt.trim();
+includeExamples ? buildExamples(domain, agent, t) : '',
+
+`${t.initHeading}
+${t.initBody}`
+  ];
+
+  return prompt.filter(Boolean).join('\n\n').trim();
+}
+
+function buildGrounding(scan, t) {
+  if (!scan) return '';
+  const lines = [t.groundingHeading, ''];
+  lines.push(`- ${t.groundingRoot}: ${scan.root}`);
+  if (scan.git && scan.git.branch) lines.push(`- ${t.groundingBranch}: ${scan.git.branch}`);
+  if (scan.tree) {
+    lines.push(`- ${t.groundingStructure}:`);
+    lines.push(scan.tree.split('\n').slice(0, 30).join('\n'));
+  }
+  const cmds = scan.commands && scan.commands.length ? scan.commands.join(' · ') : t.groundingNone;
+  lines.push(`- ${t.groundingCommands}: ${cmds}`);
+  return lines.join('\n');
+}
+
+function buildLoopContract(agent, scan, t, overrides) {
+  const p = getPlatform(agent, overrides);
+  const cmds = scan && scan.commands && scan.commands.length ? scan.commands.join(' && ') : null;
+  const verify = p.terminal
+    ? (cmds ? t.loopVerify(cmds) : t.loopVerifyGeneric)
+    : t.loopSelfVerify;
+  return [t.loopHeading, '', t.loopPlan, t.loopAct, verify, t.loopIterate, t.loopReport].join('\n');
 }
 
 function buildObjective(task, outputFormat, includeExamples, t) {

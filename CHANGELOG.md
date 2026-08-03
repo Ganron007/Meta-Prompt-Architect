@@ -21,6 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Web UI provider dropdown replaced by model + base URL + reasoning fields.
 
 ### Added
+- **Project Grounding (anti-generic prefill)**: template and recipe modes now
+  auto-scan the project and inject a Project Grounding section into every
+  prompt — root, git branch, trimmed structure, and detected verify commands
+  (`npm test`, `make test`, `pytest`, `cargo test`, `go test ./...`). Prompts
+  are copy-paste concrete instead of generic. Skip with `--no-project`;
+  web UI scans the configured project path automatically.
+- **Execution Loop contract**: every generated prompt now enforces a modern
+  agentic loop — PLAN → ACT → VERIFY (citing the project's real commands) →
+  ITERATE (max 5, never declare success on failing checks) → REPORT with
+  evidence. Terminal-less agents (DeepSeek/Kimi/GPT chat) get a SELF-VERIFY
+  phase instead. Fully translated (en/es/ja/zh).
 - **Reasoning effort**: `--reasoning low|medium|high` (or `OPENAI_REASONING`)
   sends `reasoning_effort` to reasoning-capable models across consult,
   streaming, rewrite, prompt testing, and templatize.

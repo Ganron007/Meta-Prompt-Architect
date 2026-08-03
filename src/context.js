@@ -42,7 +42,29 @@ function scanProject(root, opts = {}) {
 
   const git = readGitInfo(root);
 
-  return { root, files, tree, git };
+  const commands = detectCommands(files);
+
+  return { root, files, tree, git, commands };
+}
+
+function detectCommands(files = {}) {
+  const commands = [];
+  const pkg = files['package.json'];
+  if (pkg) {
+    try {
+      const scripts = JSON.parse(pkg.replace(/\n\.\.\. \[truncated\]$/, '')).scripts || {};
+      if (scripts.test) commands.push('npm test');
+      if (scripts.lint) commands.push('npm run lint');
+      if (scripts.typecheck) commands.push('npm run typecheck');
+      if (scripts.build) commands.push('npm run build');
+    } catch { /* unparsable package.json — skip */ }
+  }
+  if (files['Makefile'] && /(^|\n)\s*test\s*:/.test(files['Makefile'])) commands.push('make test');
+  if ((files['pyproject.toml'] && /pytest/i.test(files['pyproject.toml'])) ||
+      (files['requirements.txt'] && /pytest/i.test(files['requirements.txt']))) commands.push('pytest');
+  if (files['Cargo.toml']) commands.push('cargo test');
+  if (files['go.mod']) commands.push('go test ./...');
+  return [...new Set(commands)].slice(0, 6);
 }
 
 function buildTree(root, { maxDepth, maxEntries }) {
@@ -98,4 +120,4 @@ function summarize(scan) {
   return out;
 }
 
-module.exports = { scanProject, summarize, KEY_FILES };
+module.exports = { scanProject, summarize, detectCommands, KEY_FILES };

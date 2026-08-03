@@ -488,16 +488,23 @@ async function main() {
   if (args.scanner && !pluginScanner) { console.error(`Unknown plugin scanner: "${args.scanner}". See --plugins.`); process.exit(1); }
 
   const results = [];
+  let projectScan = null;
+  if (!args.noProject) {
+    try {
+      const { scanProject } = require('./context');
+      projectScan = scanProject(args.project || process.cwd());
+    } catch { projectScan = null; }
+  }
   for (const agent of agentList) {
     if (chain) {
       for (let i = 0; i < chain.length; i++) {
-        const agentArgs = { ...args, agent, variables, customRecipes, recipe: chain[i].id, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers };
+        const agentArgs = { ...args, agent, variables, customRecipes, recipe: chain[i].id, projectScan, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers };
         const prompt = await generate(agentArgs);
         results.push({ agent, mode: 'chain', prompt: wrapChainStep(chain, i, prompt), chainStep: chain[i], chainSize: chain.length, score: args.score ? scorePrompt(prompt, { agent }) : null });
       }
       continue;
     }
-    const agentArgs = { ...args, agent, variables, customRecipes, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, pluginScanner };
+    const agentArgs = { ...args, agent, variables, customRecipes, projectScan, pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, pluginScanner };
     let prompt;
     let mode = 'template';
 
