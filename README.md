@@ -1,182 +1,177 @@
 # Meta-Prompt Architect
 
-A prompt engineering workbench for solo engineers running multi-faceted operations. Generate platform-aware, context-grounded prompts for Cursor, Claude, OpenCode, DeepSeek, Kimi, GPT, Windsurf, Cline, and generic agents — with 45 one-shot recipes, LLM consult mode, batch generation, prompt history, and direct agent piping. Export to `.cursorrules`, `.clinerules`, `AGENTS.md`, `.windsurfrules`, OpenCode JSON/JSONC, VS Code snippets, Custom GPT instructions, or Antigravity markdown.
+A prompt engineering workbench that generates platform-aware, context-grounded prompts for AI coding agents. Combines 49 proven one-shot recipes, LLM consult mode with project scanning, multi-agent batch generation, and direct CLI piping into a single tool.
 
-## Research-backed design
+**Supported agents:** Cursor · Claude Code · OpenCode · DeepSeek · Kimi · GPT · Windsurf · Cline/Roo Code · Generic
 
-This tool synthesizes patterns from the best prompt engineering resources:
+**Export targets:** `.cursorrules` · `.clinerules` · `AGENTS.md` · `.windsurfrules` · OpenCode JSON/JSONC · VS Code Snippets · Custom GPT · Antigravity · Markdown
 
-- **LangGPT** (`langgptai/LangGPT`) — structured role/profile/goal/skills/rules/workflow prompts
-- **Prompt Engineering Guide** (`dair-ai/Prompt-Engineering-Guide`) — zero-shot, few-shot, chain-of-thought, ReAct, and more
-- **prompts.chat** (`f/prompts.chat`) — open prompt library, CLI, and MCP integrations
-- **Promptfoo** (`promptfoo/promptfoo`) — prompt testing, evaluation, and red-teaming
-- **Microsoft Promptbase** — advanced prompting methodologies such as Medprompt+
-- **GPTs leaked prompts** (`linexjlin/GPTs`) — real-world system-prompt patterns
+---
 
-## Install
+## Features
+
+| Capability | Description |
+|---|---|
+| **Platform Playbooks** | Every prompt includes agent-specific instructions exploiting the target platform's full capabilities (modes, context features, multi-agent support, terminal access) |
+| **49 One-Shot Recipes** | Proven mega-prompt patterns across software build, cybersecurity, security research, AI/agentic frameworks, and cross-domain AI integration |
+| **Consult Mode** | An LLM "Chief Operations Architect" authors the prompt using a structured meta-prompt, grounded in your actual project files |
+| **Batch Generation** | Generate platform-tailored prompts for multiple agents in a single command |
+| **Prompt History** | Local auto-save with search, replay, and clear |
+| **Direct Piping** | Send generated prompts straight to Cursor, Claude Code, or OpenCode CLI |
+| **Web UI** | Full-viewport drafting console with dark/light themes, shareable URLs, and keyboard shortcuts |
+
+---
+
+## Installation
 
 ```bash
+git clone https://github.com/Ganron007/Meta-Prompt-Architect.git
 cd Meta-Prompt-Architect
 npm install
 ```
 
-## CLI usage
+---
+
+## Quick Start
 
 ```bash
-# Generate a prompt and print it
-node src/cli.js --agent cursor --domain security --task "Review API key handling in a RAG script" --context "Running in REMnux"
+# Generate a prompt for Cursor
+node src/cli.js --agent cursor --domain security --task "Review API key handling in a RAG script"
 
-# Export as .cursorrules
-node src/cli.js --agent cursor --domain security --task "Review API key handling" --export cursorrules --out ./
+# Use a one-shot recipe
+node src/cli.js --recipe one-shot-game --agent cursor --task "tower defense with elemental towers"
 
-# Export for OpenCode
-node src/cli.js --agent deepseek --domain code-review --task "Review Rust crate for unsafe code" --export opencode --name rust-review
+# LLM consult mode (requires API key or Ollama)
+node src/cli.js --consult --agent claude --task "harden my RAG API keys" --project .
+
+# Batch: generate for multiple agents at once
+node src/cli.js --agents cursor,claude,deepseek --task "Review auth module" --domain security
+
+# Export directly to .cursorrules
+node src/cli.js --agent cursor --task "Review API key handling" --export cursorrules --out ./
+
+# Pipe directly to Claude Code
+node src/cli.js --pipe claude --agent claude --task "Refactor the API layer"
 
 # Start the web UI
 node src/cli.js --serve
 ```
 
-### CLI options
+---
+
+## CLI Reference
 
 | Option | Description |
-| --- | --- |
-| `--agent` | `cursor`, `deepseek`, `kimi`, `claude`, `gpt`, `windsurf`, `cline`, `opencode`, `generic` |
+|---|---|
+| `--agent` | Target agent: `cursor`, `deepseek`, `kimi`, `claude`, `gpt`, `windsurf`, `cline`, `opencode`, `generic` |
+| `--agents` | Comma-separated list for batch generation |
 | `--domain` | `lab-build`, `code-review`, `security`, `feature-exploration`, `release-readiness`, `general` |
-| `--task` | Brief task description |
+| `--task` | Task description (required) |
 | `--context` | Additional background |
 | `--constraints` | Rules to enforce |
 | `--project` | Project directory to scan for context (default: cwd) |
 | `--no-project` | Skip project scanning |
-| `--format` | `markdown`, `json`, `table`, `code`, `diagram`, `text` |
+| `--format` | Output format: `markdown`, `json`, `table`, `code`, `diagram`, `text` |
 | `--tone` | `professional`, `casual`, `strict` |
-| `--examples` | Include examples |
-| `--rewrite` | Use an LLM to rewrite raw input professionally |
+| `--examples` | Include examples in the prompt |
+| `--rewrite` | Polish raw input via rules or LLM before templating |
 | `--consult` | LLM authors the prompt using the COA meta-prompt + scanned context |
-| `--recipe` | Use a proven one-shot recipe (see `--recipes`) |
-| `--recipes` | List available recipes and exit |
-| `--provider` | `openai`, `deepseek`, `anthropic`, `ollama`, `openai-compatible`, `mimo` |
+| `--recipe` | Use a one-shot recipe (see `--recipes` to list) |
+| `--recipes` | List all available recipes grouped by category |
+| `--provider` | LLM provider: `openai`, `deepseek`, `anthropic`, `ollama`, `openai-compatible`, `mimo` |
 | `--model` | LLM model name |
-| `--api-key` | API key (or use env var) |
+| `--api-key` | API key (or set via env var) |
 | `--api-base` | Custom API base URL |
-| `--export` | `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `opencode-jsonc`, `vscode`, `custom-gpt`, `antigravity`, `markdown` |
+| `--export` | Export format: `cursorrules`, `clinerules`, `agents-md`, `windsurfrules`, `opencode`, `opencode-jsonc`, `vscode`, `custom-gpt`, `antigravity`, `markdown` |
 | `--name` | Output filename (without extension) |
-| `--out` | Output directory |
-| `--agents` | Comma-separated list for batch generation (e.g. `cursor,claude,deepseek`) |
-| `--pipe` | Send prompt directly to agent CLI: `cursor`, `claude`, `opencode` |
+| `--out` | Output directory (default: `./out`) |
+| `--pipe` | Send prompt to agent CLI: `cursor`, `claude`, `opencode` |
 | `--history` | List prompt history |
-| `--history-get` | Show a specific prompt from history by ID |
-| `--history-replay` | Regenerate a prompt from history |
-| `--history-clear` | Clear prompt history |
+| `--history-get <id>` | Show a specific prompt from history |
+| `--history-replay <id>` | Regenerate from a history entry |
+| `--history-clear` | Clear all history |
 | `--json` | Machine-readable JSON output |
 | `--scan` | Print scanned project context and exit |
 | `--serve` | Start web UI on `http://localhost:3000` |
 
-## One-shot recipes
+---
 
-49 proven mega-prompt patterns across 6 categories — pick one and describe your project:
+## One-Shot Recipes
+
+49 proven mega-prompt patterns across 6 categories. Each recipe is a complete, self-contained prompt template with hard rules against placeholders.
 
 ```bash
-# List all recipes (grouped by category)
-node src/cli.js --recipes
-
-# Build a complete game in one prompt
-node src/cli.js --recipe one-shot-game --agent cursor --task "tower defense with elemental towers"
-
-# AI × Cybersecurity: multi-agent SOC analyst
-node src/cli.js --recipe ai-soc-analyst --agent claude --task "SOC with Splunk and CrowdStrike"
-
-# LangGraph agent with human-in-the-loop
-node src/cli.js --recipe langgraph-agent --agent cursor --task "research agent that searches arxiv"
+node src/cli.js --recipes          # List all, grouped by category
+node src/cli.js --recipe <id> --agent <agent> --task "<description>"
 ```
 
-| Category | Recipes |
+| Category | Count | Recipes |
+|---|---|---|
+| **Software Build** | 8 | `readme-driven`, `one-shot-game`, `fullstack-app`, `prd-then-build`, `saas-starter`, `clone-builder`, `codebase-overhaul`, `spec-first-api` |
+| **Cybersecurity** | 18 | `pentest-report`, `threat-model`, `secure-code-review`, `incident-response`, `malware-analysis`, `red-team-plan`, `security-architecture`, `ctf-builder`, `hardening-guide`, `detection-rules`, `security-audit`, `reverse-engineering`, `bug-bounty-recon`, `compliance-gap`, `supply-chain-audit`, `forensic-analysis`, `exploit-dev`, `security-tool` |
+| **Security Research** | 4 | `sec-research-solve`, `sec-research-build`, `sec-research-hunt`, `sec-research-validate` |
+| **AI / Agentic Frameworks** | 10 | `langgraph-agent`, `langchain-rag`, `crewai-crew`, `autogen-team`, `mcp-server`, `ai-eval-suite`, `agent-tool-use`, `prompt-engineering-suite`, `finetune-pipeline`, `ai-api-gateway` |
+| **AI × Cybersecurity** | 6 | `ai-soc-analyst`, `ai-threat-hunter`, `ai-malware-analyst`, `ai-pentest-crew`, `ai-code-security`, `ai-incident-responder` |
+| **AI × Operations** | 3 | `ai-research-crew`, `ai-devops-agent`, `ai-data-pipeline` |
+
+### Security Research Methodology
+
+The `sec-research-*` recipes implement a full 8-phase-gate research methodology (G0–G7) with evidence ledgers, adversarial audit, multi-agent policy, false-completion rules, and mode-specific contracts:
+
+- **LAB_SOLVE** — Exploit a designed training lab end-to-end
+- **LAB_BUILD** — Build a vulnerable lab + working exploit + fixed control
+- **LAB_HUNT** — Hunt without assumptions; zero-finding outcome permitted
+- **CLAIM_VALIDATE** — Verify or refute a vulnerability/exploit claim
+
+---
+
+## Platform Awareness
+
+Every generated prompt includes a **Platform Playbook** section tailored to the target agent. The playbook instructs the agent on:
+
+- Which mode to operate in (Agent, Composer, Cascade, Task tool, etc.)
+- Which context features to leverage (`@codebase`, `CLAUDE.md`, `@file`, MCP servers)
+- Whether and how to use multi-agent capabilities (sub-agents, background agents)
+- Terminal access patterns (run tests, lint, build after changes)
+- Config files to read and update
+
+---
+
+## Consult Mode
+
+Consult mode uses an LLM to author the final prompt from scratch, grounded in your actual project:
+
+1. Scans your project (README, manifests, file tree, git branch)
+2. Sends the scan + your task + platform capabilities to the LLM
+3. The LLM produces a structured prompt following the Universal Prompt Structure
+4. Completeness is enforced: every step, path, and constraint from your input survives
+
+```bash
+node src/cli.js --consult --agent cursor --task "harden my RAG API keys" --project .
+```
+
+Requires an API key (set via `.env` or env vars) or a running Ollama instance.
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in your provider key:
+
+```bash
+cp .env.example .env
+```
+
+| Provider | Env Var |
 |---|---|
-| **Software Build** (8) | `readme-driven`, `one-shot-game`, `fullstack-app`, `prd-then-build`, `saas-starter`, `clone-builder`, `codebase-overhaul`, `spec-first-api` |
-| **Cybersecurity** (18) | `pentest-report`, `threat-model`, `secure-code-review`, `incident-response`, `malware-analysis`, `red-team-plan`, `security-architecture`, `ctf-builder`, `hardening-guide`, `detection-rules`, `security-audit`, `reverse-engineering`, `bug-bounty-recon`, `compliance-gap`, `supply-chain-audit`, `forensic-analysis`, `exploit-dev`, `security-tool` |
-| **Security Research** (4) | `sec-research-solve`, `sec-research-build`, `sec-research-hunt`, `sec-research-validate` |
-| **AI / Agentic** (10) | `langgraph-agent`, `langchain-rag`, `crewai-crew`, `autogen-team`, `mcp-server`, `ai-eval-suite`, `agent-tool-use`, `prompt-engineering-suite`, `finetune-pipeline`, `ai-api-gateway` |
-| **AI × Cybersecurity** (6) | `ai-soc-analyst`, `ai-threat-hunter`, `ai-malware-analyst`, `ai-pentest-crew`, `ai-code-security`, `ai-incident-responder` |
-| **AI × Operations** (3) | `ai-research-crew`, `ai-devops-agent`, `ai-data-pipeline` |
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| MiMo (Xiaomi) | `MIMO_API_KEY` |
+| Ollama | No key needed (runs locally on `:11434`) |
+| OpenAI-compatible | `OPENAI_API_KEY` + `ARCHITECT_API_BASE` |
 
-## Platform awareness
-
-Every generated prompt includes a **Platform Playbook** — instructions that tell the target agent how to exploit its own platform's full capabilities (agent modes, context features like `@codebase` or `CLAUDE.md`, multi-agent sub-tasks, terminal access, config files). Supported platforms: Cursor, Claude, OpenCode, DeepSeek, Kimi, GPT, Windsurf, Cline/Roo Code, and generic.
-
-## Batch generation
-
-Generate platform-tailored prompts for multiple agents in one command:
-
-```bash
-node src/cli.js --agents cursor,claude,deepseek --task "Review API key handling" --domain security
-```
-
-Each agent gets its own Platform Playbook. In `--json` mode, output is an array.
-
-## Prompt history
-
-Every generated prompt is saved locally to `.prompt-history.json`:
-
-```bash
-# List recent prompts
-node src/cli.js --history
-
-# View a specific prompt
-node src/cli.js --history-get 045646
-
-# Regenerate from a past entry
-node src/cli.js --history-replay 045646
-
-# Clear all history
-node src/cli.js --history-clear
-```
-
-## Direct agent piping
-
-Send the generated prompt straight to the target agent:
-
-```bash
-# Write to .cursorrules (Cursor picks it up automatically)
-node src/cli.js --pipe cursor --agent cursor --task "Review auth module"
-
-# Pipe to Claude Code CLI
-node src/cli.js --pipe claude --agent claude --task "Refactor the API layer"
-
-# Pipe to OpenCode CLI
-node src/cli.js --pipe opencode --agent opencode --task "Add tests for utils"
-```
-
-## Shareable URLs
-
-The web UI **Share** button encodes the full configuration into URL query params. Paste the link anywhere — opening it restores the exact setup, ready to forge.
-
-## Professional rewriting
-
-By default, your raw task text passes through unchanged. Enable rewriting with `--rewrite` to polish rough input before templating:
-
-- Without an LLM provider: a lightweight rule-based enhancer cleans up abbreviations and casual phrasing (e.g., `pls check my code` → `Please review my code`).
-- With an LLM provider: the enhancer uses the LLM to professionally rewrite your task, context, and constraints.
-
-```bash
-# Use OpenAI
-node src/cli.js --agent cursor --task "pls check my code for bugs" --rewrite --provider openai --model gpt-4o-mini
-
-# Use local Ollama (free, offline)
-node src/cli.js --agent cursor --task "make sure my rag pipeline is safe" --rewrite --provider ollama --model llama3.2
-
-# Use DeepSeek
-node src/cli.js --agent deepseek --task "review api key stuff" --rewrite --provider deepseek --model deepseek-chat
-```
-
-Supported providers:
-
-- **OpenAI** — set `OPENAI_API_KEY`
-- **DeepSeek** — set `DEEPSEEK_API_KEY` or `OPENAI_API_KEY`
-- **Anthropic** — set `ANTHROPIC_API_KEY`
-- **Ollama** — runs locally on `http://localhost:11434`
-- **OpenAI-compatible** — any provider with a `/v1/chat/completions` endpoint
-- **MiMo (Xiaomi)** — set `MIMO_API_KEY`
-
-Copy `.env.example` to `.env` and fill in your keys.
+---
 
 ## Web UI
 
@@ -184,68 +179,64 @@ Copy `.env.example` to `.env` and fill in your keys.
 npm start
 ```
 
-Open http://localhost:3000 and fill in the form to generate and export prompts.
-The server binds to `127.0.0.1` by default (set `HOST` to override). Set `PORT` to change the port.
+Opens at `http://localhost:3000`. The server binds to `127.0.0.1` by default (set `HOST` to override, `PORT` to change port).
 
-## Build a portable executable
+Features: recipe dropdown with category grouping, platform capability chips, dark/light theme toggle, Ctrl+Enter to forge, shareable URLs, word count, live status.
 
-`pkg` bundles Node + your code into a single standalone binary (no Node install required on the target machine).
+---
+
+## Portable Executable
 
 ```bash
-npm install
 npm run build
 ```
 
-Binaries are written to `dist/`:
+Produces standalone binaries in `dist/` (no Node.js required on target):
 
-- `meta-prompt-architect-win.exe` (Windows)
-- `meta-prompt-architect-linux` (Linux)
-- `meta-prompt-architect-macos` (macOS)
+- `meta-prompt-architect-win.exe`
+- `meta-prompt-architect-linux`
+- `meta-prompt-architect-macos`
 
-Run it like the CLI, or start the web UI:
+---
 
-```bash
-./dist/meta-prompt-architect-win.exe --agent cursor --task "Review API key handling"
-./dist/meta-prompt-architect-win.exe --serve   # http://localhost:3000
-```
-
-Set `PORT` to change the web UI port.
-
-## Export formats
-
-- **Markdown** — copy-paste ready prompt
-- **`.cursorrules`** — Cursor IDE system prompt file
-- **`.clinerules`** — Cline / Roo Code project instructions
-- **`AGENTS.md`** — Claude Code / OpenCode project instructions
-- **`.windsurfrules`** — Windsurf workspace rules
-- **OpenCode JSON / JSONC** — system prompt block for OpenCode CLI
-- **VS Code Snippet** — reusable `.code-snippets` file
-- **Custom GPT** — OpenAI Custom GPT instructions JSON
-- **Antigravity** — markdown instructions file
-
-## Project structure
+## Project Structure
 
 ```
 .
-├── bin/prompt-architect     # CLI entry point
+├── bin/prompt-architect       # CLI entry point
 ├── src/
-│   ├── cli.js               # CLI logic
-│   ├── config.js            # Env loading & LLM provider resolution
-│   ├── server.js            # Express web UI (localhost only)
-│   ├── generator.js         # Template-based prompt construction
-│   ├── architect.js         # LLM consult mode (COA meta-prompt)
-│   ├── context.js           # Project scanner for grounding
-│   ├── enhancer.js          # Rule/LLM input polishing
-│   ├── llm.js               # Multi-provider LLM client
-│   ├── templates.js         # Agent and domain profiles
-│   ├── platforms.js         # Platform capability profiles & playbooks
-│   ├── recipes.js           # 45 one-shot prompt recipes
-│   ├── history.js           # Local prompt history store
-│   ├── piping.js            # Direct agent CLI piping
-│   └── exporters.js         # Export formatters
-├── public/                  # Web UI assets
-└── tests/                   # Smoke tests
+│   ├── cli.js                 # CLI argument parsing and orchestration
+│   ├── config.js              # Env loading & LLM provider resolution
+│   ├── server.js              # Express web UI (localhost only)
+│   ├── generator.js           # Template-based prompt construction
+│   ├── architect.js           # LLM consult mode (COA meta-prompt)
+│   ├── context.js             # Project scanner for grounding
+│   ├── enhancer.js            # Rule/LLM input polishing
+│   ├── llm.js                 # Multi-provider LLM client
+│   ├── templates.js           # Agent and domain profiles
+│   ├── platforms.js           # Platform capability profiles & playbooks
+│   ├── recipes.js             # 49 one-shot prompt recipes
+│   ├── history.js             # Local prompt history store
+│   ├── piping.js              # Direct agent CLI piping
+│   └── exporters.js           # Export formatters (10 formats)
+├── public/                    # Web UI assets (HTML, CSS, JS)
+└── tests/                     # Test suite (16 tests)
 ```
+
+---
+
+## Research Foundations
+
+This tool synthesizes patterns from established prompt engineering research:
+
+- **LangGPT** — structured role/profile/goal/skills/rules/workflow prompts
+- **Prompt Engineering Guide** (dair-ai) — zero-shot, few-shot, CoT, ReAct
+- **prompts.chat** — open prompt library and MCP integrations
+- **Promptfoo** — prompt testing, evaluation, and red-teaming
+- **Microsoft Promptbase** — advanced methodologies (Medprompt+)
+- **GPTs leaked prompts** — real-world system-prompt patterns
+
+---
 
 ## License
 
