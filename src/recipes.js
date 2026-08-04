@@ -14,7 +14,8 @@ const recipeCategories = Object.freeze({
   crypto: 'Cryptography',
   ai: 'AI / Agentic Frameworks',
   'ai-security': 'AI × Cybersecurity',
-  'ai-ops': 'AI × Operations'
+  'ai-ops': 'AI × Operations',
+  blueprints: 'Project Blueprints (Build / Test / Deploy)'
 });
 
 const SEC_RESEARCH_METHODOLOGY = `## BEGIN TRUSTED DEVELOPER PROMPT
@@ -7351,6 +7352,360 @@ For each cryptographic usage:
 - Inventory every cryptographic usage before recommending migration.
 - Prioritize by "harvest now, decrypt later" risk.
 - {{constraints}}`
+  },
+
+  'tauri-desktop-app': {
+    label: 'Tauri Desktop App',
+    category: 'blueprints',
+    tagline: 'Rust-backed desktop app with React UI, local persistence, tray, and portable EXE releases.',
+    origin: 'Distilled from ZeroTrust.StudyForcer (Tauri 2 + React + TS + SQLite + vitest/e2e CI)',
+    taskHint: 'Describe the desktop app: purpose, core data model, key workflows, tray/notifications...',
+    template: `You are a senior desktop-application engineer. Build a complete, production-quality desktop app in one pass.
+
+**App:** {{task}}
+
+{{context}}
+
+## Architecture
+- Tauri 2 (Rust backend) + React + TypeScript + Tailwind; Vite build.
+- State: a single store library (Zustand-style) with persisted slices; SQLite or localStorage for durable data with daily auto-backup.
+- Clean separation: core logic in framework-free modules so it is unit-testable; Tauri commands only at the edge.
+- Browser mode must work for everything that does not need OS APIs (feature-detect, degrade gracefully).
+
+## Deliverables
+1. Full file tree, then complete contents of every file — no stubs, no TODOs.
+2. Core engine modules (scheduling/tracking/domain logic) with pure functions.
+3. UI: main window, settings, tray menu, native notifications, single-instance behavior.
+4. Rust side: Tauri commands, FS persistence, window state, autostart option.
+5. Tests: 900+-style ambition — vitest unit suites for every engine module, component tests, and an e2e suite; Rust unit tests for commands.
+6. CI: GitHub Actions running typecheck + unit + e2e on every PR.
+7. Release: \`npm run tauri build\` portable bundle; release workflow attaching artifacts with SHA-256 checksums on tag.
+8. README with install/dev/build commands, feature list, and test-count badge; CHANGELOG in Keep-a-Changelog format.
+9. Accessibility pass (WCAG-AA): keyboard navigation, aria labels, contrast; axe-core in CI if feasible.
+
+## Hard rules
+- Every command in the README must work as written.
+- No unwrap()/panic paths in Rust command handlers; return typed errors.
+- {{constraints}}
+
+## Output format
+Start with the file tree, then each file as a headed code block (path as heading), then a "verify it works" checklist.`
+  },
+
+  'avalonia-desktop-app': {
+    label: '.NET Avalonia Desktop App',
+    category: 'blueprints',
+    tagline: 'Clean-Architecture C#/.NET tray app with Win32 interop, xUnit CI, and checksummed zips on Releases.',
+    origin: 'Distilled from GroupTasker (.NET 9 + Avalonia + Clean Architecture + xUnit + GH Actions)',
+    taskHint: 'Describe the Windows utility: what it manages, tray/hotkey behavior, interop needs...',
+    template: `You are a senior .NET desktop engineer. Build a complete, production-quality Windows utility in one pass.
+
+**App:** {{task}}
+
+{{context}}
+
+## Architecture
+- .NET (current LTS) + Avalonia; Clean Architecture: Domain → Application → Infrastructure → UI, dependencies inward only.
+- Win32 P/Invoke + COM interop isolated in Infrastructure with typed wrappers.
+- Single-instance mutex, crash logging with rolling retention, JSON config export/import.
+- System tray icon, configurable global hotkey, auto-start option.
+
+## Deliverables
+1. Solution layout (src/ + tests/), Directory.Build.props with a single version source.
+2. Complete code for all four layers — no placeholders.
+3. UI: flyout/window with type-to-filter, full keyboard navigation, drag-and-drop reorder, context menus.
+4. 70+ xUnit tests across Domain/Application/Infrastructure; interop seams mocked.
+5. CI: GitHub Actions build+test per PR; release workflow on v* tags publishing self-contained and framework-dependent zips with MD5/SHA-256.
+6. README: build/run/publish commands, feature table, runtime requirements; CHANGELOG.
+
+## Hard rules
+- All P/Invoke signatures exact (struct layout, CharSet, release of handles); document each.
+- No UI-layer business logic; view models fully unit-testable.
+- {{constraints}}
+
+## Output format
+File tree first, then complete file contents as headed code blocks, then release-runbook steps.`
+  },
+
+  'llm-finetune-study': {
+    label: 'LLM Fine-Tune Study',
+    category: 'blueprints',
+    tagline: 'Consumer-hardware SFT/QLoRA/DPO pipeline with a rule-based benchmark harness and honest stage comparison.',
+    origin: 'Distilled from SecGPT (QLoRA on Qwen2.5-3B, 291-prompt rule-scored benchmark, leakage-aware splits)',
+    taskHint: 'Describe the domain LLM: target tasks, base model, hardware budget, data sources...',
+    template: `You are an ML engineer specializing in small-model fine-tuning on consumer GPUs. Build a complete, reproducible fine-tuning study.
+
+**Study:** {{task}}
+
+{{context}}
+
+## Pipeline
+1. Data: curate/clean SFT pairs; document provenance; quality-check script reporting duplicates, length outliers, label balance.
+2. Training: QLoRA (4-bit base + LoRA adapters) on the stated base model; config files for every stage (pretrain/SFT/DPO as applicable); VRAM budget table for consumer cards.
+3. Alignment: DPO preference pairs where the domain benefits; record accuracy deltas honestly.
+4. Benchmark: 250+ prompt harness in two layers (accuracy + practical tasks) with RULE-BASED scorers only (regex/structure/ground-truth), never an LLM judge; leakage-aware train/eval splits; hallucination tracking for factual IDs.
+5. Comparison: N-way stage report (base vs SFT vs +DPO) with per-category deltas; results JSON committed to git, weights/datasets gitignored with a DATA.md.
+
+## Deliverables
+- Complete scripts (quality check, train, eval, compare) with exact commands and expected runtimes.
+- Dataset construction notebook/script with licensing notes.
+- Findings section: what improved, what collapsed, what did NOT work (template SFT fact corruption, etc.).
+- README with hardware requirements, commands, and headline numbers; CHANGELOG.
+
+## Hard rules
+- Every claimed number must trace to a committed results JSON.
+- Report failures and collapses with the same prominence as wins.
+- {{constraints}}
+
+## Output format
+Repo layout, then full file contents, then a results-summary table template.`
+  },
+
+  'ad-soc-lab': {
+    label: 'AD/SOC Training Lab',
+    category: 'blueprints',
+    tagline: 'Vagrant/Ansible AD + SOC lab with full telemetry, scripted attack scenarios, and an 80+ check verification recipe.',
+    origin: 'Distilled from CADRE (105+ scenarios, Elastic/Sysmon/Zeek/Suricata, $0 baseline, MIT)',
+    taskHint: 'Describe the lab: VMs, domains/forests, telemetry stack, attack scenario families...',
+    template: `You are a detection engineer and lab architect. Build a complete, open-source AD/SOC training lab where every scripted attack produces ground-truth telemetry.
+
+**Lab:** {{task}}
+
+{{context}}
+
+## Topology
+- Vagrant + Ansible on a host-only network (documented /24, isolated from production); Windows Server DC(s) + Windows client + Linux member; $0-baseline choices.
+- Telemetry stack: SIEM (Elastic-style) + Sysmon modular config + network sensors (Zeek/Suricata/PCAP) + audit policy matrix (40+ subcategories).
+- Operator rules file: attacks run only from the designated workstation, direct access only.
+
+## Deliverables
+1. Infra-as-code: Vagrantfile, Ansible roles/playbooks, extension installers (SIEM fleet, network monitor, EDR agent).
+2. \`lab.py\`-style CLI: check (pre-flight), install, verify (80+ static + runtime checks), status.
+3. Attack scenario library: 100+ scripted scenarios across phases (initial access → persistence → lateral movement → exfil) with ATT&CK technique IDs; each scenario = script + expected telemetry + Sigma rule + walkthrough.
+4. Detection content: Sigma YAML catalog + SIEM detection rules + hunting templates.
+5. Agentic investigation starter: multi-agent workflow consuming the telemetry (plan/act/verify loop) with evidence schema.
+6. README: prerequisites, install, verify, cost table; per-scenario docs; CHANGELOG.
+
+## Hard rules
+- Every scenario script must be idempotent and log its ground truth.
+- Isolation: no NAT bridging to production; secrets gitignored.
+- {{constraints}}
+
+## Output format
+Topology diagram (ASCII), file tree, then complete file contents per component.`
+  },
+
+  'c2-training-range': {
+    label: 'C2 Training Range',
+    category: 'blueprints',
+    tagline: 'Docker-first C2 framework range behind a header-gated redirector with decoy page and no internet egress.',
+    origin: 'Distilled from C2Stack (Sliver/Havoc/Mythic/Adaptix + Apache redirector, isolated networks)',
+    taskHint: 'Describe the range: which C2 frameworks, operator workstation, lab targets, OPSEC constraints...',
+    template: `You are a red-team infrastructure engineer. Build a containerized C2 training range for authorized lab use only.
+
+**Range:** {{task}}
+
+{{context}}
+
+## Design
+- Docker Compose: one container per C2 framework (default two, extra profile-gated); internal network with NO internet egress; only the redirector published.
+- Header-aware redirector (Apache/nginx): requests carrying the magic header proxy to the selected C2; everything else gets a decoy static CDN page.
+- Operator ports documented per framework; .env.example for all credentials; bootstrap script (ps1 + sh) copying env, building, starting, health-checking.
+- Optional out-of-band channel (cloud storage blob) behind a profile flag.
+
+## Deliverables
+1. compose file(s), redirector config, Dockerfiles or upstream-image wrappers, bootstrap scripts for Windows/Linux.
+2. Operator quick-start: connect each client, verify beacon against the lab VMs, run one end-to-end exercise.
+3. OPSEC & safety doc: isolation rules, what is allowed, snapshot discipline, "never outside the lab" policy.
+4. Teardown + reset procedure; resource requirements (RAM/disk).
+5. README with architecture diagram and exact commands; CHANGELOG.
+
+## Hard rules
+- No container may have default-route internet access; document the network ACLs.
+- All credentials templated via .env; nothing hardcoded.
+- {{constraints}}
+
+## Output format
+Architecture diagram, file tree, complete configs/scripts, then a first-exercise walkthrough.`
+  },
+
+  'mcp-sec-tool': {
+    label: 'Intent-Level MCP Security Tool',
+    category: 'blueprints',
+    tagline: 'FastAPI + MCP server exposing typed intent tools with scope policy, HITL gates, and a hash-chained audit ledger.',
+    origin: 'Distilled from RedStrike + DFIR-Nexus (intent-level tools, ScopePolicy, HMAC ledger, examiner approval)',
+    taskHint: 'Describe the domain tooling: which intents to expose, evidence model, approval rules...',
+    template: `You are a security-platform engineer. Build an agent-safe security tool: an MCP server + HTTP API that exposes INTENT-LEVEL operations only — never arbitrary shell.
+
+**Tool:** {{task}}
+
+{{context}}
+
+## Architecture
+- Python + FastAPI single process; Pydantic models for every intent; typed command builders (subprocess with shell=False).
+- Scope policy module checked before ANY execution (allowed targets/networks/times); API key auth + rate limiter.
+- Evidence model: every observation becomes a record with SHA-256 hash; findings reference evidence ids; hash-chained (HMAC) audit ledger of actions + approvals.
+- HITL: destructive or high-risk intents return a draft; execution requires explicit human approval endpoint with lockout on repeated failure.
+- Async jobs API with lifecycle (pending/running/completed) and dedupe; JSON + Markdown report renderers.
+
+## Deliverables
+1. Complete server: intents registry, scope policy, ledger, jobs, reports, MCP tool surface mirroring the HTTP routes.
+2. CLI wrapper for human operators (same code paths as the API).
+3. 200+ checks: unit (policy, ledger chaining, builders), integration (case init → evidence → finding → report provenance walk), functional audit.
+4. Agent skill bundle: CLAUDE.md/system prompt, discipline rules, hooks that log every agent command into the ledger and block destructive patterns.
+5. README: threat model of the tool itself, deploy, MCP client setup; CHANGELOG.
+
+## Hard rules
+- The LLM may draft; only a human approves. Enforce in code, not prose.
+- Read-only by default; privilege escalation is an explicit profile.
+- {{constraints}}
+
+## Output format
+Design doc (threat model + intent catalog), file tree, complete code, test matrix.`
+  },
+
+  'ai-audit-cli': {
+    label: 'AI Security Audit CLI',
+    category: 'blueprints',
+    tagline: 'Multi-agent security scanner with LLM-drafted patches in a gated find→fix→verify loop and SARIF/CI output.',
+    origin: 'Distilled from Praxis (26 agents, offline threat intel, unified-diff patches with undo, GH Action)',
+    taskHint: 'Describe the audit scope: code vulns, AI/LLM exposure, supply chain, compliance targets...',
+    template: `You are a security-tooling engineer. Build an autonomous-but-gated AI security audit CLI.
+
+**Tool:** {{task}}
+
+{{context}}
+
+## Architecture
+- Node.js CLI (single dependency-light package); concurrent agent registry (20+ agents): secrets, deps/CVEs, auth, config, CI/CD, supply chain, plus AI-surface agents (prompt-file injection, MCP tool declarations, model-file risks, RAG/vector sources, agent memory poisoning).
+- Offline-first intel: ingest free feeds (OSV, GHSA, KEV, EPSS, NVD, secret-patterns) into a local SQLite; optional paid feeds behind flags.
+- Remediation loop: LLM drafts a unified diff → interactive review → atomic write + undo log → re-scan to verify the fix actually clears the finding.
+- Compliance mapping of every finding (OWASP LLM Top 10, MITRE ATLAS, NIST AI RMF, etc.).
+- CI mode: threshold exit codes + SARIF/JSON/HTML reports; GitHub Actions composite action.
+
+## Deliverables
+1. Full CLI: scan / fix / intel / report / agents command groups with help text.
+2. Agent base class + 20 concrete agents with deterministic cores and opt-in LLM deep analysis.
+3. Patch engine with undo log and verification re-scan; never auto-applies without approval.
+4. 100+ tests incl. fixture repos with planted findings; CI workflow; README + CHANGELOG.
+
+## Hard rules
+- Findings must cite file:line evidence; no vibe-based detections.
+- Every LLM action gated and reversible.
+- {{constraints}}
+
+## Output format
+Architecture overview, file tree, complete source, then a demo transcript on a sample repo.`
+  },
+
+  're-stage-pipeline': {
+    label: 'Staged Malware RE Pipeline',
+    category: 'blueprints',
+    tagline: 'Seven-stage RE pipeline (intake→audit) in scripted/agentic/web modes with SQL-first tool evidence and honest verdicts.',
+    origin: 'Distilled from CADRE-RevAI/RevEng (LangGraph ReAct deep-dive, truly_green gates, LLM never replaces engines)',
+    taskHint: 'Describe the RE pipeline: sample classes, tool inventory, verdict policy, report consumers...',
+    template: `You are a malware reverse-engineering engineer. Build a staged, honest RE pipeline for an isolated analysis VM.
+
+**Pipeline:** {{task}}
+
+{{context}}
+
+## Stages
+intake (source-selection judge) → quick_scan (deterministic tools + one-shot verdict with accuracy gate) → deep_dive (agentic ReAct loop over SQL-queryable disassembly) → yara_gen → publish (HITL on disagreement) → section correlate (map-reduce) → audit.
+
+## Principles
+- SQL-first evidence: Ghidra/IDA populate SQLite; agents query structured evidence (functions, strings, imports) — never scrape listings.
+- LLM roles strictly scoped: judge, summarizer, tool-loop planner. Engines (disassembler, capa, YARA, emulators) produce facts.
+- Honest gates: \`truly_green\` requires every stage artifact present; reports tagged \`llm_judge\` vs \`deterministic_fallback\`; RAG default-off unless benchmarked.
+
+## Deliverables
+1. Stage scripts + orchestrator with retry and HITL; TOOL_MANIFEST of 20+ auto tools with health checks.
+2. Agent tool registry (ghidra_query, decompile, signature_match, z3/angr hooks).
+3. Report generator with quality scorer and verdict disagreement handling.
+4. Web console (minimal) + systemd deploy script + verify script (smoke gate).
+5. 100+ tests: stage contracts, fixture evidence packs, report gates; README with safety rules for sample handling; CHANGELOG.
+
+## Hard rules
+- Samples never leave the isolated VM; document handling rules.
+- No stage may report green on missing artifacts.
+- {{constraints}}
+
+## Output format
+Stage diagram, file tree, complete code, sample run transcript, verification checklist.`
+  },
+
+  'grc-risk-pipeline': {
+    label: 'GRC Risk Pipeline',
+    category: 'blueprints',
+    tagline: 'Findings adapters → dedupe → 3x3 risk engine → GRC sinks → HITL approval → automated remediation → board report.',
+    origin: 'Distilled from CADRE-Risk (CISO Assistant + VerifyWise sinks, live SIEM, Ansible remediation)',
+    taskHint: 'Describe the estate and frameworks: risk register scope, GRC platforms, remediation targets...',
+    template: `You are a GRC engineer who codes. Build a risk-management pipeline that turns tool findings into governed, remediated risk records.
+
+**Program:** {{task}}
+
+{{context}}
+
+## Pipeline
+1. Adapters: SARIF/JSON/JSONL ingest from scanners and AI-audit tools; normalize to a finding schema.
+2. Dedupe + correlate by asset/control; risk engine scores 3x3 likelihood × impact with rationale per score.
+3. Registers as source of truth: Markdown risk register + control register; every change diffable.
+4. Sinks: push to a classic GRC platform (ISO 27001/NIST CSF mapping) and an AI-governance platform (EU AI Act/ISO 42001) via their APIs.
+5. Feedback: approval workflow (HITL) → remediation playbooks (Ansible-style, AST-tagged) → verification re-scan.
+6. Reporting: board memo generator + cross-platform dashboard (works with zero containers via mocks).
+
+## Deliverables
+- Complete pipeline modules + demo entry points per stage.
+- Portfolio artifacts: appetite statement, 15+ seeded risks, control register, board memo template.
+- Live-SIEM connector (query security indices for control failures) behind a flag.
+- Tests for every adapter/engine/sink with fixture payloads; README mapping exercises to CISSP domains; CHANGELOG.
+
+## Hard rules
+- No risk changes state without an approver recorded.
+- Every automated remediation is idempotent and reversible.
+- {{constraints}}
+
+## Output format
+Pipeline diagram, file tree, complete code, seeded demo walkthrough.`
+  },
+
+  'vuln-ai-lab': {
+    label: 'Vulnerable AI App Lab',
+    category: 'blueprints',
+    tagline: 'Docker lab of deliberately vulnerable LLM/RAG/MCP apps mapped to OWASP LLM Top 10 + ATLAS, with prompt-audit schema.',
+    origin: 'Distilled from CADRE-DarkAI (14 modules, 225+ exercises, prompt-audit.jsonl, Praxis patch loop)',
+    taskHint: 'Describe the lab: target apps (chatbot/RAG/MCP/agents), exercise families, forensics angle...',
+    template: `You are an AI-security instructor. Build a containerized lab of deliberately vulnerable AI applications with attack AND forensics exercises.
+
+**Lab:** {{task}}
+
+{{context}}
+
+## Targets (one container each, isolated bridge network)
+- LLM chatbot with injectable system prompt and unsafe tool sinks.
+- RAG pipeline with poisonable ingestion and embedding endpoint.
+- MCP server with over-privileged tools.
+- Multi-agent loop with inter-agent trust and memory.
+- Legacy-ML services (model server + registry) for supply-chain exercises.
+
+## Curriculum
+- Modules mapped to OWASP LLM Top 10 (2025), MITRE ATLAS, and a governance framework; each exercise = setup, attack steps, expected evidence, detection ideas, remediation.
+- Forensics track in parallel: memory dumps, vector-DB audit logs, prompt trails; shared \`prompt-audit.jsonl\` schema written by every service.
+- Defensive loop: find vuln → engineer patch → verify remediation programmatically.
+
+## Deliverables
+1. compose file + per-app source (small, readable, genuinely vulnerable by design).
+2. 200+ exercises with solutions and flags; module docs with mappings.
+3. lab-up/verify scripts with health checks; .env.example; isolation rules doc.
+4. Tests: app health, schema conformance of audit logs, exercise smoke checks; README + CHANGELOG.
+
+## Hard rules
+- Label all deliberately introduced behavior; never ship as "secure" code.
+- Lab network isolated; no external egress.
+- {{constraints}}
+
+## Output format
+Lab topology, file tree, complete app sources, exercise catalog table, first-module walkthrough.`
   }
 };
 

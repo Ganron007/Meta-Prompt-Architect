@@ -6,7 +6,7 @@ const KEY_FILES = [
   'package.json', 'pyproject.toml', 'requirements.txt', 'Pipfile',
   'Cargo.toml', 'go.mod', 'pom.xml', 'build.gradle',
   '.cursorrules', 'opencode.json', 'opencode.jsonc',
-  'docker-compose.yml', 'Dockerfile', 'Makefile',
+  'docker-compose.yml', 'Dockerfile', 'Makefile', 'Vagrantfile',
   '.env.example'
 ];
 
@@ -43,8 +43,33 @@ function scanProject(root, opts = {}) {
   const git = readGitInfo(root);
 
   const commands = detectCommands(files);
+  const stack = detectStack(files, tree);
 
-  return { root, files, tree, git, commands };
+  return { root, files, tree, git, commands, stack };
+}
+
+function detectStack(files = {}, tree = '') {
+  const stack = [];
+  const pkg = files['package.json'];
+  let pkgJson = null;
+  if (pkg) {
+    try { pkgJson = JSON.parse(pkg.replace(/\n\.\.\. \[truncated\]$/, '')); } catch { /* partial */ }
+  }
+  if (pkgJson) {
+    const deps = { ...(pkgJson.dependencies || {}), ...(pkgJson.devDependencies || {}) };
+    if (deps['@tauri-apps/api']) stack.push('tauri');
+    if (deps.react || deps.vue || deps.svelte) stack.push('frontend');
+    stack.push('node');
+  }
+  const ml = /torch|transformers|peft|qlora/i.test(files['pyproject.toml'] || '') || /torch|transformers|peft|qlora/i.test(files['requirements.txt'] || '');
+  if (files['pyproject.toml'] || files['requirements.txt'] || files['Pipfile']) stack.push('python');
+  if (ml) stack.push('python-ml');
+  if (files['Cargo.toml']) stack.push('rust');
+  if (files['go.mod']) stack.push('go');
+  if (files['docker-compose.yml'] || files['Dockerfile']) stack.push('docker');
+  if (files['Vagrantfile'] || /Vagrantfile/.test(tree)) stack.push('vagrant');
+  if (/\.csproj|\.sln/.test(tree)) stack.push('dotnet');
+  return stack;
 }
 
 function detectCommands(files = {}) {
@@ -120,4 +145,4 @@ function summarize(scan) {
   return out;
 }
 
-module.exports = { scanProject, summarize, detectCommands, KEY_FILES };
+module.exports = { scanProject, summarize, detectCommands, detectStack, KEY_FILES };

@@ -11,8 +11,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.5.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-34_passing-3ad9b5?style=flat-square" alt="tests"/>
-  <img src="https://img.shields.io/badge/recipes-111-ffb224?style=flat-square" alt="recipes"/>
+  <img src="https://img.shields.io/badge/tests-37_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/recipes-121-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
 
@@ -38,7 +38,10 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Platform Playbooks** | Agent-specific instructions exploiting each platform's modes, context features, multi-agent support, and terminal access |
 | **Project Grounding** | Template mode auto-scans your project and injects real facts — stack, structure, git branch, and detected verify commands — into every prompt, so output is never generic (skip with `--no-project`) |
 | **Execution Loop** | Every prompt enforces a modern agentic loop: PLAN → ACT → VERIFY (with your project's real commands) → ITERATE → REPORT with evidence |
-| **111 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, and AI/agentic frameworks |
+| **Ship Plan & Test Matrix** | Build-oriented prompts get stack-aware ship steps (Tauri, .NET, Node, Python/ML, Rust, Go, Docker, Vagrant) plus a mandatory unit/integration/e2e/CI matrix |
+| **Safety & Honest Gates** | Security prompts carry intent-level-tools + HITL + scope-policy + audit-ledger clauses and compliance mapping (ATT&CK/ATLAS/OWASP LLM 10/NIST AI 600-1); every prompt enforces honest quality gates |
+| **Repo Scaffold** | `--scaffold` writes a stack-aware skeleton (GitHub Actions CI, Makefile, `.env.example`) for the detected stack |
+| **121 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, AI/agentic frameworks — plus 10 project blueprints for building, testing, and deploying complete tools and labs |
 | **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt; `--stream` for token-by-token output |
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
 | **Prompt Testing** | `--test` runs the prompt against an LLM and evaluates the response — format compliance, `--expect` criteria, LLM-as-judge scores |
@@ -99,7 +102,7 @@ node src/cli.js --validate-recipes
 
 ## One-Shot Recipes
 
-111 proven patterns across 16 categories. List them with `--recipes`:
+121 proven patterns across 17 categories. List them with `--recipes`:
 
 | Category | Count | Examples |
 |---|---|---|
@@ -119,6 +122,7 @@ node src/cli.js --validate-recipes
 | **AI / Agentic** | 10 | `langgraph-agent`, `langchain-rag`, `crewai-crew`, `autogen-team`, `mcp-server`, `ai-eval-suite` |
 | **AI × Cybersecurity** | 6 | `ai-soc-analyst`, `ai-threat-hunter`, `ai-pentest-crew`, `ai-code-security`, `ai-incident-responder` |
 | **AI × Operations** | 3 | `ai-research-crew`, `ai-devops-agent`, `ai-data-pipeline` |
+| **Project Blueprints** | 10 | `tauri-desktop-app`, `avalonia-desktop-app`, `llm-finetune-study`, `ad-soc-lab`, `c2-training-range`, `mcp-sec-tool`, `ai-audit-cli`, `re-stage-pipeline`, `grc-risk-pipeline`, `vuln-ai-lab` |
 
 The **Security Research** recipes implement a full 8-phase-gate methodology (G0–G7) with evidence ledgers, adversarial audit, multi-agent policy, and mode-specific contracts.
 
@@ -143,8 +147,9 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--rewrite` | Polish raw input via rules or LLM |
 | `--consult` | LLM authors the prompt with project grounding (`--stream` for live tokens) |
 | `--scan` | Print the scanned project context and exit |
+| `--scaffold` | Write a stack-aware repo skeleton (CI workflow, Makefile, `.env.example`) to `--out/scaffold` |
 | `--recipe` | Use a one-shot recipe |
-| `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` |
+| `--chain` | Link recipes into a chain with handoffs and quality gates: `--chain id1,id2,...` or a preset (`@blueprint-sec`, `@blueprint-ai`) |
 | `--recipes` | List all recipes |
 | `--model` | LLM model name (or `OPENAI_MODEL`) |
 | `--api-key` | API key (or `OPENAI_API_KEY`) |
@@ -228,7 +233,7 @@ src/
 ├── architect.js     # LLM consult mode
 ├── context.js       # Project scanner
 ├── platforms.js     # Platform playbooks (9 agents)
-├── recipes.js       # 111 one-shot recipes
+├── recipes.js       # 121 one-shot recipes + blueprints
 ├── custom-recipes.js # Custom recipe builder (build/validate/save/load)
 ├── chain.js         # Prompt chain handoffs + quality gates
 ├── recipe-packs.js  # Recipe pack import/export (file, URL, Gist)

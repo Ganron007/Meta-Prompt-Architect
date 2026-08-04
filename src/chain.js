@@ -8,10 +8,18 @@ const CARRYOVER_ITEMS = [
   'open risks, blockers, and unresolved questions'
 ];
 
+const CHAIN_PRESETS = {
+  '@blueprint-sec': ['ad-soc-lab', 'mcp-sec-tool', 'grc-risk-pipeline'],
+  '@blueprint-ai': ['vuln-ai-lab', 'ai-audit-cli', 'llm-finetune-study']
+};
+
 function parseChain(value) {
-  const ids = String(value || '').split(',').map(id => id.trim()).filter(Boolean);
+  const raw = String(value || '').trim();
+  const ids = raw.startsWith('@')
+    ? (CHAIN_PRESETS[raw] || (() => { throw new Error(`Unknown chain preset "${raw}". Available: ${Object.keys(CHAIN_PRESETS).join(', ')}`); })())
+    : raw.split(',').map(id => id.trim()).filter(Boolean);
   if (ids.length < 2) {
-    throw new Error('--chain needs at least two recipe ids, e.g. --chain prd-then-build,saas-starter');
+    throw new Error('--chain needs at least two recipe ids, e.g. --chain prd-then-build,saas-starter (or a preset like @blueprint-sec)');
   }
   return ids;
 }
@@ -58,4 +66,4 @@ function wrapChainStep(chain, index, prompt) {
   return `${header}\n\n${chainPreamble(chain, index)}\n\n${prompt}`;
 }
 
-module.exports = { parseChain, buildChain, chainPreamble, wrapChainStep };
+module.exports = { parseChain, buildChain, chainPreamble, wrapChainStep, CHAIN_PRESETS };

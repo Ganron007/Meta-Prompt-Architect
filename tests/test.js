@@ -12,7 +12,7 @@ const { buildPlaybook, getPlatform } = require('../src/platforms');
 const { addHistoryEntry, listHistory, getHistoryEntry, clearHistory } = require('../src/history');
 const { scorePrompt, formatScore } = require('../src/scorer');
 const { buildCustomRecipe, validateCustomRecipe, saveCustomRecipe, loadCustomRecipes, parseVariables } = require('../src/custom-recipes');
-const { parseChain, buildChain, chainPreamble, wrapChainStep } = require('../src/chain');
+const { parseChain, buildChain, chainPreamble, wrapChainStep, CHAIN_PRESETS } = require('../src/chain');
 const { buildPack, validatePack, exportPack, importPack, isUrl, normalizeSource } = require('../src/recipe-packs');
 const { diffLines, summarizeDiff, formatDiff, collapseSameRuns, configChanges } = require('../src/diff');
 const { getStrings, resolveLang, SUPPORTED_LANGS } = require('../src/i18n');
@@ -848,6 +848,67 @@ async function testIntegrationSweep() {
   console.log(`integration sweep: OK (${all.length} recipes, ${formats.length} formats, ${agents.length} agents)`);
 }
 
+async function testBlueprintSections() {
+  const { detectStack } = require('../src/context');
+  const tauri = detectStack({ 'package.json': JSON.stringify({ dependencies: { '@tauri-apps/api': '2.0.0', react: '19.0.0' } }) }, 'app/\n├─ src/');
+  assert(tauri.includes('tauri') && tauri.includes('frontend') && tauri.includes('node'), `tauri stack: ${tauri}`);
+  const dotnet = detectStack({}, 'src/\n├─ App.csproj\n└─ App.sln');
+  assert(dotnet.includes('dotnet'), 'dotnet stack from tree');
+  const ml = detectStack({ 'requirements.txt': 'torch\ntransformers\n' }, '');
+  assert(ml.includes('python') && ml.includes('python-ml'), 'python-ml stack');
+  const infra = detectStack({ 'docker-compose.yml': 'services:', 'Vagrantfile': 'Vagrant.configure' }, '');
+  assert(infra.includes('docker') && infra.includes('vagrant'), 'infra stack');
+
+  const sec = await generate({ agent: 'cursor', domain: 'security', task: 'review API' });
+  assert(sec.includes('Safety & Governance') && sec.includes('Compliance Mapping') && sec.includes('Honest Quality Gates'), 'security prompt carries safety/compliance/honesty');
+  assert(sec.includes('MITRE ATT&CK'), 'classic compliance mapping');
+
+  const aiSec = await generate({ agent: 'cursor', domain: 'security', task: 'x', recipe: 'aisec-prompt-injection' });
+  assert(aiSec.includes('OWASP LLM Top 10'), 'AI-security compliance mapping');
+
+  const buildPrompt = await generate({ agent: 'cursor', domain: 'lab-build', task: 'build a tool', projectScan: { stack: ['tauri', 'node'], commands: ['npm test'], root: '/x', tree: 'x/' } });
+  assert(buildPrompt.includes('Ship Plan') && buildPrompt.includes('tauri build'), 'stack-aware ship plan');
+  assert(buildPrompt.includes('Test Matrix'), 'build prompts carry test matrix');
+
+  const chat = await generate({ agent: 'deepseek', task: 'explain DNS' });
+  assert(!chat.includes('Ship Plan') && !chat.includes('Safety & Governance'), 'non-build/non-sec prompts stay lean');
+  assert(chat.includes('Honest Quality Gates'), 'honest gates are universal');
+  console.log('blueprint sections: OK');
+}
+
+async function testBlueprintRecipes() {
+  const ids = ['tauri-desktop-app', 'avalonia-desktop-app', 'llm-finetune-study', 'ad-soc-lab', 'c2-training-range', 'mcp-sec-tool', 'ai-audit-cli', 're-stage-pipeline', 'grc-risk-pipeline', 'vuln-ai-lab'];
+  for (const id of ids) {
+    const r = getRecipe(id);
+    assert(r, `recipe ${id} exists`);
+    const rendered = renderRecipe(id, { task: 'blueprint test', context: 'ctx', constraints: 'none' });
+    assert(!/\{\{[^}]+\}\}/.test(rendered), `recipe ${id} renders clean`);
+  }
+  const validation = validateRecipes();
+  assert(validation.valid, `blueprint recipes validate: ${validation.errors.join('; ')}`);
+  assert(validation.recipeCount >= 121, `121+ recipes, got ${validation.recipeCount}`);
+  assert(validation.categories.blueprints === 10, 'blueprints category has 10 recipes');
+
+  const sec = parseChain('@blueprint-sec');
+  assert.deepStrictEqual(sec, CHAIN_PRESETS['@blueprint-sec'], 'sec preset expands');
+  buildChain(sec);
+  assert.throws(() => parseChain('@nope'), /preset/, 'unknown preset rejected');
+  console.log('blueprint recipes: OK');
+}
+
+async function testScaffold() {
+  const { buildScaffold } = require('../src/scaffold');
+  const files = buildScaffold({ stack: ['node', 'docker'], commands: ['npm test', 'npm run lint'] });
+  assert(files['.github/workflows/ci.yml'].includes('npm test') && files['.github/workflows/ci.yml'].includes('docker compose config'), 'ci covers detected stacks');
+  assert(files['Makefile'].includes('npm test'), 'makefile uses detected test command');
+  assert('.env.example' in files, 'env example scaffolded');
+  const py = buildScaffold({ stack: ['python'], commands: ['pytest'] });
+  assert(py['.github/workflows/ci.yml'].includes('pytest -q'), 'python ci scaffold');
+  const args = parseArgs(['--scaffold', '--task', 'x', '--out', './out']);
+  assert(args.scaffold === true, '--scaffold parses');
+  console.log('scaffold: OK');
+}
+
 async function testGoldenRegression() {
   const { runGoldenTests } = require('./golden');
   const results = await runGoldenTests({ update: process.env.GOLDEN_UPDATE === '1' });
@@ -926,6 +987,9 @@ async function main() {
   await testStreaming();
   await testIntegrationSweep();
   await testGroundingLoop();
+  await testBlueprintSections();
+  await testBlueprintRecipes();
+  await testScaffold();
   await testGoldenRegression();
   console.log('All tests passed.');
 }

@@ -37,6 +37,24 @@ You are running on **Cursor** (IDE agent). Exploit its full capabilities:
 4. **ITERATE** — if verification fails, diagnose and fix (max 5 loops); never declare success while checks are failing.
 5. **REPORT** — summarize what changed and cite verification evidence (commands run, results observed).
 
+## Honest Quality Gates
+
+- Tag every LLM-assisted verdict with its method (`llm_judge` vs `deterministic`); never present a fallback as LLM-verified.
+- A check is green only with observed evidence (command output, artifact, or test result) — never assumed success.
+- If retrieval/RAG is used and shown to degrade results, default it off and say so explicitly.
+- State known limitations and failure modes in the final report.
+
+## Safety & Governance (mandatory for security work)
+
+- Expose agent capabilities as intent-level tools only — never free-form shell execution.
+- Enforce a scope policy checked before every action; destructive actions require explicit human approval (HITL gate).
+- Keep a tamper-evident, hash-chained audit ledger of every action, finding, and approval.
+- Isolate lab/target infrastructure (separate subnet, gitignored secrets, snapshot discipline); never point tooling at production.
+
+## Compliance Mapping
+
+Map findings and controls to: MITRE ATT&CK (technique IDs), OWASP Top 10 / API Top 10, NIST CSF.
+
 ## Inputs
 - Task: Review API key handling
 - Additional Context: RAG script in REMnux

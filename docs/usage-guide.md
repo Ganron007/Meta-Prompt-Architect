@@ -9,6 +9,7 @@ copy-paste examples. CLI commands assume you are in the repo root
 - [Your first prompt (template mode)](#your-first-prompt-template-mode)
 - [Project grounding](#project-grounding)
 - [Execution loop](#execution-loop)
+- [Repo scaffold](#repo-scaffold)
 - [Consult mode (LLM-authored)](#consult-mode-llm-authored)
 - [Reasoning effort](#reasoning-effort)
 - [One-shot recipes](#one-shot-recipes)
@@ -106,6 +107,23 @@ PLAN → ACT → VERIFY (using your project's detected commands) → ITERATE
 (max 5, never claim success on failing checks) → REPORT with evidence.
 Chat-only agents (DeepSeek/Kimi/GPT) get a SELF-VERIFY phase instead.
 
+Build-oriented prompts (build/blueprints/AI categories, `lab-build` domain)
+additionally carry a **Ship Plan** (stack-aware build/test/deploy steps +
+checksummed release) and a **Test Matrix** (unit/integration/e2e/CI).
+Security prompts add **Safety & Governance** (intent-level tools, HITL,
+scope policy, audit ledger, isolation) and **Compliance Mapping**
+(ATT&CK/OWASP/NIST CSF, or OWASP LLM Top 10/ATLAS/NIST AI 600-1 for AI
+security). Every prompt ends with **Honest Quality Gates**.
+
+## Repo scaffold
+
+Write a skeleton for the detected stack (CI workflow, Makefile, .env.example):
+
+```bash
+node src/cli.js --scaffold --project ../my-app --out ./out
+# → out/scaffold/.github/workflows/ci.yml, Makefile, .env.example
+```
+
 ## Consult mode (LLM-authored)
 
 The Architect LLM writes the prompt itself, grounded in a scan of your
@@ -152,6 +170,10 @@ context, and quality gates.
 
 ```bash
 node src/cli.js --chain prd-then-build,saas-starter --agent claude --task "kanban app"
+
+# Lifecycle presets
+node src/cli.js --chain @blueprint-sec --agent claude --task "AD lab + tooling + GRC program"
+node src/cli.js --chain @blueprint-ai --agent claude --task "AI security program"
 
 # Chain + export: one file per step (step1-prd-then-build, step2-saas-starter)
 node src/cli.js --chain prd-then-build,saas-starter --agent cursor \

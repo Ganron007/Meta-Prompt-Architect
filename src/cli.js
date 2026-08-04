@@ -86,6 +86,7 @@ Options:
   --show-response                                   Print the raw test response
   --analytics                                       Show usage analytics summary and exit
   --scan                                            Print the scanned project context and exit
+  --scaffold                                        Write a stack-aware repo skeleton (CI, Makefile, .env.example) to --out/scaffold
   --history                                         List prompt history
   --history-get <id>                                Show a specific prompt from history
   --history-clear                                   Clear prompt history
@@ -117,7 +118,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd(), _provided: new Set() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--model', '--api-key', '--api-base', '--reasoning', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--model', '--api-key', '--api-base', '--reasoning', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--scaffold', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -187,6 +188,7 @@ function parseArgs(argv) {
       case '--analytics': args.analytics = true; break;
       case '--validate-recipes': args.validateRecipes = true; break;
       case '--scan': args.scan = true; break;
+      case '--scaffold': args.scaffold = true; break;
       case '--history': args.history = true; break;
       case '--history-get': args.historyGet = argv[++i]; break;
       case '--history-clear': args.historyClear = true; break;
@@ -469,6 +471,22 @@ async function main() {
     const scan = scanProject(args.project || process.cwd());
     if (args.json) console.log(JSON.stringify(scan, null, 2));
     else console.log(summarizeScan(scan));
+    return;
+  }
+
+  if (args.scaffold) {
+    const { scanProject } = require('./context');
+    const { buildScaffold } = require('./scaffold');
+    const scan = scanProject(args.project || process.cwd()) || { files: {}, tree: '', commands: [], stack: [] };
+    const files = buildScaffold({ stack: scan.stack || [], commands: scan.commands || [] });
+    const outDir = path.resolve(args.out, 'scaffold');
+    for (const [rel, content] of Object.entries(files)) {
+      const target = path.join(outDir, rel);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, content, 'utf8');
+      console.log(`scaffold: ${target}`);
+    }
+    console.log(`Detected stack: ${scan.stack && scan.stack.length ? scan.stack.join(', ') : '(none)'} — review and adapt the skeleton.`);
     return;
   }
 

@@ -55,15 +55,25 @@ async function generate(config) {
   const t = getStrings(lang);
   const grounding = buildGrounding(projectScan, t);
   const loop = buildLoopContract(agent, projectScan, t, pluginPlatforms);
+  const honest = buildHonestGates(t);
 
-  if (recipe && getRecipe(recipe, customRecipes)) {
+  const recipeObj = recipe ? getRecipe(recipe, customRecipes) : null;
+  const category = recipeObj ? recipeObj.category : null;
+  const isSec = securityContext(domain, category);
+  const isBuild = BUILD_CATEGORIES.has(category) || domain === 'lab-build';
+  const ship = isBuild ? buildShipPlan(projectScan, t) : '';
+  const matrix = isBuild ? buildTestMatrix(projectScan, t) : '';
+  const safety = isSec ? buildSafetyClause(t) : '';
+  const compliance = isSec ? buildCompliance(domain, category, t) : '';
+
+  if (recipeObj) {
     const rendered = renderRecipe(recipe, {
       task: enhancedTask,
       context: enhancedContext,
       constraints: enhancedConstraints,
       variables
     }, customRecipes);
-    return [rendered, playbook, grounding, loop].filter(Boolean).join('\n\n').trim();
+    return [rendered, playbook, grounding, loop, ship, matrix, honest, safety, compliance].filter(Boolean).join('\n\n').trim();
   }
 
   const agentProfile = templates.agentProfiles[agent] || templates.agentProfiles.generic;
@@ -87,6 +97,16 @@ playbook,
 grounding,
 
 loop,
+
+ship,
+
+matrix,
+
+honest,
+
+safety,
+
+compliance,
 
 `${t.inputsHeading}
 ${inputs}`,
@@ -127,6 +147,50 @@ function buildLoopContract(agent, scan, t, overrides) {
     ? (cmds ? t.loopVerify(cmds) : t.loopVerifyGeneric)
     : t.loopSelfVerify;
   return [t.loopHeading, '', t.loopPlan, t.loopAct, verify, t.loopIterate, t.loopReport].join('\n');
+}
+
+const SEC_CATEGORIES = new Set(['security', 'sec-research', 'dfir', 'reverse-eng', 'malware', 'aisec', 'redteam', 'blueteam', 'cloudsec', 'appsec', 'osint', 'crypto', 'ai-security']);
+const AI_SEC_CATEGORIES = new Set(['aisec', 'ai-security']);
+const BUILD_CATEGORIES = new Set(['build', 'blueprints', 'ai', 'ai-ops']);
+
+function securityContext(domain, recipeCategory) {
+  return SEC_CATEGORIES.has(recipeCategory) || domain === 'security' || SEC_CATEGORIES.has(domain);
+}
+
+function buildShipPlan(scan, t) {
+  const stack = (scan && scan.stack) || [];
+  const steps = [];
+  if (stack.includes('tauri')) steps.push(t.shipTauri);
+  if (stack.includes('dotnet')) steps.push(t.shipDotnet);
+  if (stack.includes('node')) steps.push(t.shipNode);
+  if (stack.includes('python-ml')) steps.push(t.shipPyML);
+  else if (stack.includes('python')) steps.push(t.shipPython);
+  if (stack.includes('rust')) steps.push(t.shipRust);
+  if (stack.includes('go')) steps.push(t.shipGo);
+  if (stack.includes('docker')) steps.push(t.shipDocker);
+  if (stack.includes('vagrant')) steps.push(t.shipVagrant);
+  if (!steps.length) steps.push(t.shipGeneric);
+  const lines = [t.shipHeading, ''];
+  steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+  lines.push(`${steps.length + 1}. ${t.shipRelease}`);
+  return lines.join('\n');
+}
+
+function buildTestMatrix(scan, t) {
+  return [t.testHeading, '', `- ${t.testUnit}`, `- ${t.testIntegration}`, `- ${t.testE2E}`, `- ${t.testCI}`, `- ${t.testCounts}`].join('\n');
+}
+
+function buildHonestGates(t) {
+  return [t.honestHeading, '', `- ${t.honest1}`, `- ${t.honest2}`, `- ${t.honest3}`, `- ${t.honest4}`].join('\n');
+}
+
+function buildSafetyClause(t) {
+  return [t.safetyHeading, '', `- ${t.safety1}`, `- ${t.safety2}`, `- ${t.safety3}`, `- ${t.safety4}`].join('\n');
+}
+
+function buildCompliance(domain, recipeCategory, t) {
+  const ai = AI_SEC_CATEGORIES.has(recipeCategory);
+  return [t.complianceHeading, '', ai ? t.complianceAI : t.complianceClassic].join('\n');
 }
 
 function buildObjective(task, outputFormat, includeExamples, t) {

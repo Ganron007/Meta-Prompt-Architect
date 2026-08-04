@@ -70,3 +70,23 @@ You are running on **Claude / Claude Code** (Chat + CLI agent). Exploit its full
 3. **VERIFY** — run the project's tests/linters and read the output; if none exist, ask the user how to verify.
 4. **ITERATE** — if verification fails, diagnose and fix (max 5 loops); never declare success while checks are failing.
 5. **REPORT** — summarize what changed and cite verification evidence (commands run, results observed).
+
+## Ship Plan (build / test / deploy)
+
+1. State the exact build, test, and deploy commands for the chosen stack before writing any code.
+2. Release: version bump + CHANGELOG entry, tag, CI-built artifacts on GitHub Releases with SHA-256 checksums.
+
+## Test Matrix (mandatory)
+
+- Unit suite over core logic — every public function/module covered; failures block merges.
+- Integration suite exercising real I/O boundaries (files, APIs, subprocesses) with mocked externals.
+- End-to-end or script-based suite walking the full user/case flow (CLI, UI, or pipeline).
+- CI: a GitHub Actions workflow running every suite on each PR; nothing merges red.
+- Publish the passing test count (README badge + CHANGELOG); regenerate golden/fixture files whenever output changes intentionally.
+
+## Honest Quality Gates
+
+- Tag every LLM-assisted verdict with its method (`llm_judge` vs `deterministic`); never present a fallback as LLM-verified.
+- A check is green only with observed evidence (command output, artifact, or test result) — never assumed success.
+- If retrieval/RAG is used and shown to degrade results, default it off and say so explicitly.
+- State known limitations and failure modes in the final report.

@@ -21,6 +21,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Web UI provider dropdown replaced by model + base URL + reasoning fields.
 
 ### Added
+- **Portfolio blueprint recipes (10)** distilled from real shipped projects:
+  `tauri-desktop-app`, `avalonia-desktop-app`, `llm-finetune-study`,
+  `ad-soc-lab`, `c2-training-range`, `mcp-sec-tool`, `ai-audit-cli`,
+  `re-stage-pipeline`, `grc-risk-pipeline`, `vuln-ai-lab` — new `blueprints`
+  category (121 recipes / 17 categories total).
+- **Ship Plan + Test Matrix sections**: build-oriented prompts (build/blueprints/
+  ai categories, lab-build domain) now carry stack-aware build/test/deploy
+  steps (detected via Tauri/.NET/Node/Python-ML/Rust/Go/Docker/Vagrant markers)
+  plus a mandatory unit/integration/e2e/CI test matrix and checksummed-release
+  step.
+- **Safety & Governance + Compliance Mapping clauses** on all security
+  prompts: intent-level tools, HITL gates, scope policy, hash-chained audit
+  ledger, isolation discipline; findings mapped to ATT&CK/OWASP/NIST CSF or
+  OWASP LLM Top 10/ATLAS/NIST AI 600-1 (+EU AI Act/ISO 42001 for AI security).
+- **Honest Quality Gates** on every prompt: method tagging (llm_judge vs
+  deterministic), evidence-only green checks, RAG default-off on degradation,
+  stated limitations.
+- **`--scaffold`**: writes a stack-aware repo skeleton (GitHub Actions CI,
+  Makefile with detected verify commands, `.env.example`) to `--out/scaffold`.
+- **Chain presets**: `--chain @blueprint-sec` (ad-soc-lab → mcp-sec-tool →
+  grc-risk-pipeline) and `--chain @blueprint-ai` (vuln-ai-lab → ai-audit-cli →
+  llm-finetune-study).
 - **Usage guide** (`docs/usage-guide.md`): task-oriented walkthrough of every
   feature with copy-paste examples — grounding, loop contract, consult,
   reasoning, recipes, chaining, scoring, testing, custom recipes, packs,
