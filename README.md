@@ -227,7 +227,7 @@ hardcoded model names — point it at **any** OpenAI-compatible endpoint
 ```
 src/
 ├── cli.js           # CLI orchestration
-├── config.js        # Env & provider resolution
+├── config.js        # Env loading & generic LLM resolution
 ├── server.js        # Express web UI
 ├── generator.js     # Template prompt construction
 ├── architect.js     # LLM consult mode
@@ -249,7 +249,7 @@ src/
 ├── profiles.js      # Saved config profiles
 ├── history.js       # Prompt history store
 ├── piping.js        # Agent piping (8 targets)
-├── llm.js           # Multi-provider LLM client
+├── llm.js           # OpenAI-compatible LLM client (call + stream)
 ├── enhancer.js      # Input polishing
 ├── templates.js     # Agent/domain profiles
 └── exporters.js     # 10 export formatters

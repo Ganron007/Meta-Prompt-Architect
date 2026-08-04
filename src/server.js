@@ -8,7 +8,7 @@ const { loadEnvChain, resolveLLM } = require('./config');
 const { listRecipes, recipeCategories } = require('./recipes');
 const { buildCustomRecipe, saveCustomRecipe, loadCustomRecipes } = require('./custom-recipes');
 const { platforms } = require('./platforms');
-const { listHistory, getHistoryEntry } = require('./history');
+const { listHistory, getHistoryEntry, addHistoryEntry } = require('./history');
 const { scorePrompt } = require('./scorer');
 const { diffLines, summarizeDiff, configChanges } = require('./diff');
 const { recordEvent, loadEvents, summarize: summarizeAnalytics } = require('./analytics');
@@ -38,11 +38,13 @@ app.post('/api/generate', async (req, res) => {
       const result = await consultArchitect(cfg);
       const score = scorePrompt(result.prompt, { agent: cfg.agent });
       recordEvent('generate', { agent: cfg.agent, mode: 'consult', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
+      addHistoryEntry({ agent: cfg.agent, mode: 'consult', prompt: result.prompt, task: cfg.task, context: cfg.context, constraints: cfg.constraints, domain: cfg.domain, outputFormat: cfg.outputFormat, tone: cfg.tone, lang: cfg.lang, includeExamples: cfg.includeExamples, recipe: cfg.recipe, variables: cfg.variables, consult: true, rewrite: cfg.rewrite });
       return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score });
     }
     const prompt = await generate(cfg);
     const score = scorePrompt(prompt, { agent: cfg.agent });
     recordEvent('generate', { agent: cfg.agent, mode: 'template', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
+    addHistoryEntry({ agent: cfg.agent, mode: 'template', prompt, task: cfg.task, context: cfg.context, constraints: cfg.constraints, domain: cfg.domain, outputFormat: cfg.outputFormat, tone: cfg.tone, lang: cfg.lang, includeExamples: cfg.includeExamples, recipe: cfg.recipe, variables: cfg.variables, consult: false, rewrite: cfg.rewrite });
     res.json({ prompt, mode: 'template', score });
   } catch (err) {
     res.status(400).json({ error: err.message });

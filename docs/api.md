@@ -10,8 +10,8 @@ Generate a prompt.
 
 **Body:** generation config — `task` (required), `agent`, `domain`, `context`,
 `constraints`, `outputFormat`, `tone`, `lang`, `includeExamples`, `recipe`,
-`variables`, `consult`, `rewrite`, `provider`, `model`, `apiKey`, `apiBase`,
-`project`, `enhanceWith`.
+`variables`, `consult`, `rewrite`, `model`, `apiKey`, `apiBase`, `reasoning`,
+`project`, `noProject`, `enhanceWith`.
 
 **Response:**
 
