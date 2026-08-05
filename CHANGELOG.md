@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-08-05
 
 ### Changed
 - **BREAKING: generic LLM configuration.** All provider-specific code
@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Web UI provider dropdown replaced by model + base URL + reasoning fields.
 
 ### Added
+- **Maintenance playbook** (`docs/maintenance.md`): freshness surfaces
+  (playbooks, recipes, compliance, piping, i18n), update procedures, and the
+  release checklist.
 - **Portfolio blueprint recipes (10)** distilled from real shipped projects:
   `tauri-desktop-app`, `avalonia-desktop-app`, `llm-finetune-study`,
   `ad-soc-lab`, `c2-training-range`, `mcp-sec-tool`, `ai-audit-cli`,
@@ -64,6 +67,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   streaming, rewrite, prompt testing, and templatize.
 
 ### Fixed
+- **Web UI generations not recorded in history**: `/api/generate` now calls
+  `addHistoryEntry` for both template and consult modes, so the History modal
+  and `--history-diff` work for web-only users.
 - **Web UI modals always visible**: `.modal` set `display: flex`, overriding
   the browser's `[hidden]` rule — added a `.modal[hidden]` guard so the
   History and Usage analytics modals stay closed until opened.

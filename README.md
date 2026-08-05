@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.0-ffb224?style=flat-square" alt="version"/>
+  <img src="https://img.shields.io/badge/version-2.0.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
   <img src="https://img.shields.io/badge/tests-37_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-121-ffb224?style=flat-square" alt="recipes"/>
@@ -270,6 +270,7 @@ Synthesizes patterns from: LangGPT · Prompt Engineering Guide (dair-ai) · prom
 - [docs/recipe-authoring.md](docs/recipe-authoring.md) — how to write, validate, and share recipes
 - [docs/platform-authoring.md](docs/platform-authoring.md) — how to add platforms and playbooks
 - [docs/api.md](docs/api.md) — HTTP API reference for the web server
+- [docs/maintenance.md](docs/maintenance.md) — freshness surfaces, update procedures, release checklist
 
 ---
 
