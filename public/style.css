@@ -588,6 +588,8 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
   background: color-mix(in srgb, var(--teal) 5%, transparent);
 }
 
+.recipe-variables[hidden] { display: none; }
+
 .recipe-variables-title {
   font-family: var(--font-mono);
   font-size: 9px;
