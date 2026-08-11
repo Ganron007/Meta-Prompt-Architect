@@ -77,6 +77,12 @@ async function generate() {
     $('task').focus();
     return;
   }
+  if (config.chain && config.consult) {
+    config.consult = false;
+    $('consult').checked = false;
+    toggleLLMConfig();
+    showToast('Chain runs in recipe mode — consult disabled for this forge.');
+  }
 
   const btn = $('generateBtn');
   const label = btn.querySelector('.btn-label');
@@ -120,7 +126,9 @@ async function generate() {
       chip.hidden = true;
     }
 
-    if (data.mode === 'consult' && data.scanned) {
+    if (data.mode === 'chain') {
+      setStatus(`Forged ${data.chain.length}-step chain \u2014 full lifecycle in one output.`, 'ok');
+    } else if (data.mode === 'consult' && data.scanned) {
       setStatus(`Forged via consult \u2014 grounded in ${data.scanned.files.length} files @ ${data.scanned.root}`, 'ok');
     } else if (data.mode === 'consult') {
       setStatus('Forged via consult \u2014 no project scan supplied.', 'ok');

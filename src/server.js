@@ -24,7 +24,8 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 function withCustomRecipes(config = {}) {
   const project = config.project || process.cwd();
   const out = { ...config, customRecipes: loadCustomRecipes({ project, recipeDir: config.recipeDir }), pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers, enhanceWith: config.enhanceWith || [] };
-  if (!config.consult && !config.noProject) {
+  const wantsConsult = config.consult && !config.chain;
+  if (!wantsConsult && !config.noProject) {
     try { out.projectScan = scanProject(project); } catch { /* grounding is best-effort */ }
   }
   return out;
