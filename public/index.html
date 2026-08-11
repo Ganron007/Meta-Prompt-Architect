@@ -49,18 +49,20 @@
         <div class="pane-body scroll">
           <fieldset class="group">
             <legend>The ask</legend>
-            <div class="field">
-              <div class="field-label-row">
-                <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
-                <button id="toggleRecipeBuilder" class="btn-text" type="button">Build recipe</button>
+              <div class="field">
+                <div class="field-label-row">
+                  <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
+                  <button id="toggleRecipeBuilder" class="btn-text" type="button">Build recipe</button>
+                </div>
+                <input type="text" id="recipeFilter" class="recipe-filter" placeholder="Filter 121 recipes... e.g. dfir, mcp, tauri" />
+                <div class="select-wrap">
+                  <select id="recipe">
+                    <option value="">None — freeform task</option>
+                  </select>
+                </div>
+                <span class="recipe-tagline" id="recipeTagline"></span>
+                <p class="recipe-filter-empty" id="recipeFilterEmpty" hidden>No recipes match.</p>
               </div>
-              <div class="select-wrap">
-                <select id="recipe">
-                  <option value="">None — freeform task</option>
-                </select>
-              </div>
-              <span class="recipe-tagline" id="recipeTagline"></span>
-            </div>
             <div id="recipeVariables" class="recipe-variables" hidden>
               <span class="recipe-variables-title">Recipe inputs</span>
               <div id="recipeVariableFields" class="recipe-variable-fields"></div>

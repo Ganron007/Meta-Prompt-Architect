@@ -794,6 +794,19 @@ $('llmMoreBtn').addEventListener('click', () => {
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
 $('recipe').addEventListener('change', onRecipeChange);
+$('recipeFilter').addEventListener('input', () => {
+  const q = $('recipeFilter').value.trim().toLowerCase();
+  const sel = $('recipe');
+  for (const opt of sel.options) {
+    if (!opt.value) continue;
+    const matches = !q || opt.value.toLowerCase().includes(q) || opt.textContent.toLowerCase().includes(q);
+    opt.hidden = !matches;
+  }
+  const visible = [...sel.options].filter(o => o.value && !o.hidden);
+  if (sel.value && ![...sel.options].find(o => o.value === sel.value && !o.hidden)) sel.value = '';
+  $('recipeFilterEmpty').hidden = visible.length > 0;
+  if (sel.value) onRecipeChange();
+});
 $('toggleRecipeBuilder').addEventListener('click', toggleRecipeBuilder);
 $('previewRecipeBtn').addEventListener('click', previewRecipe);
 $('saveRecipeBtn').addEventListener('click', saveRecipe);

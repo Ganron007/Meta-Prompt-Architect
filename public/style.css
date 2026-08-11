@@ -52,6 +52,8 @@ html[data-theme="light"] {
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body { height: 100%; }
 
 body {
@@ -577,6 +579,25 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
 }
 
 .recipe-tagline:empty { display: none; }
+
+.recipe-filter {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  padding: 7px 10px;
+  background: var(--panel-deep);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+
+.recipe-filter::placeholder { color: var(--faint); }
+
+.recipe-filter-empty {
+  font-size: 11px;
+  color: var(--danger);
+  margin-top: 4px;
+}
 
 .recipe-variables {
   display: flex;

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recipe filter in web UI**: type-to-filter over the 121-recipe dropdown
+  (matches id and label), with a no-match hint; selection resets if the
+  chosen recipe is filtered out.
+- **Defensive CSS guard**: global `[hidden] { display: none !important; }`
+  prevents display-rule overrides from leaking hidden UI (the class of bug
+  that hit modals, recipe inputs, and the LLM block).
 - **Web UI LLM indicator**: `/api/meta` now exposes the configured LLM
   (model, base URL, reasoning effort — never the API key). When a server LLM
   is configured the UI shows a compact read-only chip (model · host ·
