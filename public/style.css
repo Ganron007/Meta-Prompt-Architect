@@ -344,7 +344,7 @@ html[data-theme="light"] .icon-moon { opacity: 1; transform: rotate(0); }
 
 .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
 
-.field-row { display: flex; gap: 12px; }
+.field-row { display: flex; gap: 12px; align-items: flex-end; }
 
 .field label {
   font-size: 12px;
