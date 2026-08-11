@@ -758,20 +758,39 @@ async function loadMeta(project) {
 }
 
 function renderLlmHint() {
-  const hint = $('llmHint');
   const llm = state.meta && state.meta.llm;
+  const server = $('llmServer');
+  const serverValue = $('llmServerValue');
+  const hint = $('llmHint');
+  const moreBtn = $('llmMoreBtn');
+  const custom = $('llmCustom');
   const modelInput = $('model');
+  const hasCustom = Boolean(modelInput.value || $('apiKey').value || $('apiBase').value);
   if (!llm) return;
   if (llm.model) {
     const host = llm.apiBase ? llm.apiBase.replace(/^https?:\/\//, '').replace(/\/+$/, '') : 'configured endpoint';
-    hint.textContent = `Server LLM: ${llm.model} · ${host}${llm.reasoning ? ` · reasoning ${llm.reasoning}` : ''}`;
+    serverValue.textContent = `${llm.model} · ${host}${llm.reasoning ? ` · reasoning ${llm.reasoning}` : ''}`;
+    server.hidden = false;
+    hint.hidden = true;
     if (!modelInput.value) modelInput.placeholder = llm.model;
+    custom.hidden = !hasCustom;
+    moreBtn.textContent = hasCustom ? '− Close custom LLM' : '+ Add another LLM';
+    moreBtn.hidden = false;
   } else {
-    hint.textContent = 'No LLM configured on the server — consult mode needs OPENAI_* in .env or the API key field below.';
-    hint.classList.add('warn');
+    server.hidden = true;
+    moreBtn.hidden = true;
+    custom.hidden = false;
+    hint.textContent = 'No LLM configured on the server — add one below (or set OPENAI_* in .env).';
+    hint.hidden = false;
   }
-  hint.hidden = false;
 }
+
+$('llmMoreBtn').addEventListener('click', () => {
+  const custom = $('llmCustom');
+  const btn = $('llmMoreBtn');
+  custom.hidden = !custom.hidden;
+  btn.textContent = custom.hidden ? '+ Add another LLM' : '− Close custom LLM';
+});
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
 $('recipe').addEventListener('change', onRecipeChange);

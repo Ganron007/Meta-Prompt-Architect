@@ -233,35 +233,43 @@
 
             <div id="llmConfig" class="llm-config">
               <div class="llm-inner">
-                <div class="field-row">
-                  <div class="field">
-                    <label for="model">Model</label>
-                    <input type="text" id="model" placeholder="any model your endpoint serves" />
-                  </div>
-                  <div class="field">
-                    <label for="reasoning">Reasoning effort <span class="optional">reasoning models</span></label>
-                    <div class="select-wrap">
-                      <select id="reasoning">
-                        <option value="">Default</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                <div class="llm-server" id="llmServer" hidden>
+                  <span class="llm-server-label">Server LLM</span>
+                  <span class="llm-server-value" id="llmServerValue"></span>
+                  <span class="llm-server-note">from .env — no key needed here</span>
+                </div>
+                <p class="llm-hint warn" id="llmHint" hidden></p>
+                <button type="button" class="btn-ghost llm-more-btn" id="llmMoreBtn" hidden>+ Add another LLM</button>
+                <div class="llm-custom" id="llmCustom" hidden>
+                  <div class="field-row">
+                    <div class="field">
+                      <label for="model">Model</label>
+                      <input type="text" id="model" placeholder="any model your endpoint serves" />
+                    </div>
+                    <div class="field">
+                      <label for="reasoning">Reasoning effort <span class="optional">reasoning models</span></label>
+                      <div class="select-wrap">
+                        <select id="reasoning">
+                          <option value="">Default</option>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <p class="llm-hint" id="llmHint" hidden></p>
-                <div class="field">
-                  <label for="apiKey">API key <span class="optional">blank for keyless local servers</span></label>
-                  <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
-                </div>
-                <div class="field">
-                  <label for="apiBase">API base URL <span class="optional">any OpenAI-compatible endpoint</span></label>
-                  <input type="text" id="apiBase" placeholder="https://api.openai.com/v1" />
-                </div>
-                <div class="field">
-                  <label for="project">Project path <span class="optional">consult grounding</span></label>
-                  <input type="text" id="project" placeholder="e.g. C:\my-project  (blank = server cwd)" />
+                  <div class="field">
+                    <label for="apiKey">API key <span class="optional">blank for keyless local servers</span></label>
+                    <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
+                  </div>
+                  <div class="field">
+                    <label for="apiBase">API base URL <span class="optional">any OpenAI-compatible endpoint</span></label>
+                    <input type="text" id="apiBase" placeholder="https://api.openai.com/v1" />
+                  </div>
+                  <div class="field">
+                    <label for="project">Project path <span class="optional">consult grounding</span></label>
+                    <input type="text" id="project" placeholder="e.g. C:\my-project  (blank = server cwd)" />
+                  </div>
                 </div>
               </div>
             </div>

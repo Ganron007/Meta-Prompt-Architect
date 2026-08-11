@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Web UI LLM indicator**: `/api/meta` now exposes the configured LLM
-  (model, base URL, reasoning effort — never the API key) and the UI shows
-  "Server LLM: <model> · <host>" with the model field's placeholder set, so
-  users always know which model consult mode uses.
+  (model, base URL, reasoning effort — never the API key). When a server LLM
+  is configured the UI shows a compact read-only chip (model · host ·
+  reasoning) with a separate "+ Add another LLM" dropdown for per-session
+  overrides; if nothing is configured, the custom fields are shown directly
+  with a warning hint.
 
 ## [2.0.0] - 2026-08-05
 
