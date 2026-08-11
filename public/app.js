@@ -29,6 +29,7 @@ function getConfig() {
     consult,
     rewrite: $('rewrite').checked,
     recipe: $('recipe').value || undefined,
+    chain: $('chainInput').value.trim() || undefined,
     model: $('model').value.trim(),
     apiKey: $('apiKey').value.trim(),
     apiBase: $('apiBase').value.trim(),
@@ -203,12 +204,13 @@ async function exportFile() {
 
   const format = $('exportFormat').value;
   const name = 'generated-prompt';
+  const edited = $('output').textContent !== state.prompt ? true : undefined;
 
   try {
     const res = await fetch('/api/export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ config: state.config, format, name })
+      body: JSON.stringify({ config: state.config, format, name, edited })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -226,8 +228,10 @@ function copyToClipboard() {
   }
   const done = () => showToast('Copied to clipboard.');
   const fail = () => showToast('Copy failed \u2014 select the text manually.', 'error');
+  const text = $('output').textContent.trim();
+  if (!text) { showToast('Nothing to copy.', 'error'); return; }
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(state.prompt).then(done).catch(() => { legacyCopy(); });
+    navigator.clipboard.writeText(text).then(done).catch(() => { legacyCopy(); });
   } else {
     legacyCopy();
   }
@@ -235,7 +239,7 @@ function copyToClipboard() {
   function legacyCopy() {
     try {
       const ta = document.createElement('textarea');
-      ta.value = state.prompt;
+      ta.value = text;
       ta.style.position = 'fixed';
       ta.style.opacity = '0';
       document.body.appendChild(ta);
@@ -794,6 +798,41 @@ $('llmMoreBtn').addEventListener('click', () => {
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
 $('recipe').addEventListener('change', onRecipeChange);
+$('presetBlueSec').addEventListener('click', () => { $('chainInput').value = '@blueprint-sec'; showToast('Chain preset set — forge to build the full lifecycle.'); });
+$('presetBlueAi').addEventListener('click', () => { $('chainInput').value = '@blueprint-ai'; showToast('Chain preset set — forge to build the full lifecycle.'); });
+$('importPackBtn').addEventListener('click', () => $('packFile').click());
+$('packFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const res = await fetch('/api/packs/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack: JSON.parse(text) })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showToast(`Imported ${data.imported.length} recipe(s)` + (data.skipped.length ? ` · ${data.skipped.length} skipped` : '') + '.');
+    loadMeta();
+  } catch (err) {
+    showToast('Import failed: ' + err.message, 'error');
+  }
+  e.target.value = '';
+});
+$('exportPackBtn').addEventListener('click', async () => {
+  const category = window.prompt('Export which category? (dfir, redteam, blueprints, ... or "all")', 'all');
+  if (category === null) return;
+  try {
+    const res = await fetch('/api/packs/export?category=' + encodeURIComponent(category.trim()));
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    download(JSON.stringify(data, null, 2), `${data.name || 'pack'}.json`, 'application/json');
+    showToast(`Exported ${data.recipes.length} recipes.`);
+  } catch (err) {
+    showToast('Export failed: ' + err.message, 'error');
+  }
+});
 $('recipeFilter').addEventListener('input', () => {
   const q = $('recipeFilter').value.trim().toLowerCase();
   const sel = $('recipe');

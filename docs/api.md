@@ -10,8 +10,12 @@ Generate a prompt.
 
 **Body:** generation config — `task` (required), `agent`, `domain`, `context`,
 `constraints`, `outputFormat`, `tone`, `lang`, `includeExamples`, `recipe`,
-`variables`, `consult`, `rewrite`, `model`, `apiKey`, `apiBase`, `reasoning`,
-`project`, `noProject`, `enhanceWith`.
+`chain` (id list or `@preset`), `variables`, `consult`, `rewrite`, `model`,
+`apiKey`, `apiBase`, `reasoning`, `project`, `noProject`, `enhanceWith`.
+
+When `chain` is set, the response is `{ "prompt": "<all steps joined>",
+"mode": "chain", "chain": [{ "id", "label", "position" }] }` and `recipe` is
+ignored.
 
 **Response:**
 

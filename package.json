@@ -14,7 +14,7 @@
   "scripts": {
     "start": "node src/server.js",
     "cli": "node src/cli.js",
-    "test": "node tests/test.js",
+    "test": "node tests/test.js && node tests/ui.test.js",
     "build": "pkg . --out-path dist"
   },
   "keywords": [
@@ -41,6 +41,7 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
+    "happy-dom": "^20.11.2",
     "pkg": "^5.8.1"
   }
 }

@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **History-as-memory consult**: consult mode now retrieves up to 3 similar
+  past prompts from your history (keyword overlap, with human-edited and
+  higher-scored prompts preferred) and feeds them as few-shot context so the
+  Architect reuses what already worked. Disable with `--no-memory`.
+- **Learn from edits**: CLI `--review` edits and web UI output edits are now
+  tracked (analytics `review-edit` / `edited-export` events) and the approved
+  prompt is marked `edited` in history — which memory prioritizes next time.
+  The web output pane is now editable before copy/export.
+- **Web UI chain builder**: chain input with `@blueprint-sec` / `@blueprint-ai`
+  preset buttons; `/api/generate` now supports `chain` (parses presets, wraps
+  each step, returns the full chain as one output, records history).
+- **Web UI recipe packs**: import a pack from a file or export any category as
+  a downloadable pack JSON via `/api/packs/import` and `/api/packs/export`.
+- **UI regression tests**: happy-dom suite (`tests/ui.test.js`, 6 suites) runs
+  with `npm test` — covers the LLM chip/toggle states, recipe filter, recipe
+  variable inputs, and modal visibility (would have caught all three
+  hidden-attribute regressions).
 - **Recipe filter in web UI**: type-to-filter over the 121-recipe dropdown
   (matches id and label), with a no-match hint; selection resets if the
   chosen recipe is filtered out.

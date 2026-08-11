@@ -64,6 +64,20 @@ The generated prompt MUST include a "Platform Playbook" section exploiting these
     parts.push(`\n## PROJECT CONTEXT (use to ground the prompt)\n${rendered}`);
   }
 
+  if (config.memory !== false) {
+    try {
+      const { findSimilarPrompts } = require('./memory');
+      const similar = findSimilarPrompts(`${config.task || ''} ${config.context || ''}`);
+      if (similar.length) {
+        const block = similar.map((s, i) =>
+          `${i + 1}. Past task: ${s.task.slice(0, 200)}${s.edited ? ' [human-edited & approved]' : ''}${s.scorePercent !== null ? ` [scored ${s.scorePercent}%]` : ''}\n---\n${s.prompt.slice(0, 1400)}`
+        ).join('\n\n');
+        parts.push(`\n## SIMILAR PAST PROMPTS (your own history — reuse what worked, improve what did not)
+${block}`);
+      }
+    } catch { /* memory is best-effort */ }
+  }
+
   parts.push(`\nNow produce the final prompt for the ${config.agent} agent, following the Universal Prompt Structure and including the Platform Playbook.`);
   return parts.join('\n');
 }

@@ -73,6 +73,7 @@ Options:
   --profile-dir <dir>                               Explicit profile directory
   --offline                                         Force rule-based fallback (no LLM) for --templatize
   --stream                                          Stream consult-mode tokens to the terminal as they arrive
+  --no-memory                                       Disable history-as-memory few-shot in consult mode
   --vars <json>                                    Values for a custom recipe's extra placeholders
   --pipe <cursor|claude|opencode|aider|windsurf|continue|cody|copilot>  Send prompt straight to the target agent
   --export <cursorrules|clinerules|agents-md|windsurfrules|opencode|opencode-jsonc|vscode|custom-gpt|antigravity|markdown>  Export format
@@ -118,7 +119,7 @@ Examples:
 
 function parseArgs(argv) {
   const args = { outputFormat: 'markdown', agent: 'generic', domain: 'general', tone: 'professional', out: './out', name: 'generated-prompt', project: process.cwd(), _provided: new Set() };
-  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--model', '--api-key', '--api-base', '--reasoning', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--scaffold', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
+  const known = new Set(['--agent', '--agents', '--domain', '--task', '--context', '--constraints', '--project', '--no-project', '--format', '--tone', '--lang', '--examples', '--rewrite', '--consult', '--model', '--api-key', '--api-base', '--reasoning', '--recipe', '--chain', '--recipes', '--create-recipe', '--recipe-name', '--recipe-category', '--recipe-role', '--recipe-steps', '--recipe-rules', '--recipe-output', '--recipe-placeholders', '--recipe-scope', '--recipe-dir', '--overwrite-recipe', '--import-recipe', '--export-pack', '--share-pack', '--review', '--enhance-with', '--scanner', '--plugins', '--plugin-dir', '--templatize', '--profile', '--save-profile', '--profiles', '--profile-dir', '--offline', '--stream', '--vars', '--pipe', '--export', '--name', '--out', '--json', '--score', '--test', '--expect', '--no-judge', '--show-response', '--analytics', '--validate-recipes', '--scan', '--scaffold', '--no-memory', '--history', '--history-get', '--history-clear', '--history-replay', '--history-diff', '--serve', '--help']);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith('--') && !known.has(arg)) {
@@ -189,6 +190,7 @@ function parseArgs(argv) {
       case '--validate-recipes': args.validateRecipes = true; break;
       case '--scan': args.scan = true; break;
       case '--scaffold': args.scaffold = true; break;
+      case '--no-memory': args.memory = false; break;
       case '--history': args.history = true; break;
       case '--history-get': args.historyGet = argv[++i]; break;
       case '--history-clear': args.historyClear = true; break;
@@ -552,17 +554,22 @@ async function main() {
   if (args.review) {
     const { reviewPrompt } = require('./review');
     for (const result of results) {
-      const outcome = await reviewPrompt(result.prompt, { question: `Approve prompt for ${result.agent}?` });
+      const original = result.prompt;
+      const outcome = await reviewPrompt(original, { question: `Approve prompt for ${result.agent}?` });
       if (!outcome.approved) {
         console.error('Aborted by reviewer — nothing exported, piped, or saved to history.');
         process.exit(1);
       }
       result.prompt = outcome.prompt;
+      if (original !== outcome.prompt) {
+        result.edited = true;
+        recordEvent('review-edit', { agent: result.agent, deltaChars: original.length - outcome.prompt.length, approved: true });
+      }
     }
   }
 
-  for (const { agent, mode, prompt, chainStep, score } of results) {
-    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, lang: args.lang, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite });
+  for (const { agent, mode, prompt, chainStep, score, edited } of results) {
+    addHistoryEntry({ agent, mode, prompt, task: args.task, context: args.context, constraints: args.constraints, domain: args.domain, outputFormat: args.outputFormat, tone: args.tone, lang: args.lang, includeExamples: args.includeExamples, recipe: chainStep ? chainStep.id : args.recipe, variables, consult: args.consult, rewrite: args.rewrite, edited: edited || undefined, scorePercent: score ? score.percent : undefined });
     recordEvent('generate', { agent, mode, domain: args.domain, recipe: chainStep ? chainStep.id : args.recipe || null, scorePercent: score ? score.percent : undefined });
   }
 

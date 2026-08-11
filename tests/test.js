@@ -909,6 +909,40 @@ async function testScaffold() {
   console.log('scaffold: OK');
 }
 
+async function testMemory() {
+  const { findSimilarPrompts, tokens } = require('../src/memory');
+  const history = [
+    { task: 'review api key handling in express app', context: 'node', prompt: 'x'.repeat(300), edited: true, scorePercent: 80 },
+    { task: 'build a tower defense game', context: 'canvas', prompt: 'y'.repeat(300) },
+    { task: 'unrelated gardening guide', context: '', prompt: 'z'.repeat(300) }
+  ];
+  const sim = findSimilarPrompts('review the api keys of my express app', { history });
+  assert(sim.length === 1 && sim[0].edited === true, 'finds similar prompts and prefers edited ones');
+  const none = findSimilarPrompts('quantum entanglement essay', { history });
+  assert(none.length === 0, 'no overlap returns nothing');
+  const short = findSimilarPrompts('review api keys', { history: [{ task: 'x', prompt: 'tiny' }] });
+  assert(short.length === 0, 'too-short prompts ignored');
+  assert(tokens('review api-key handling') .includes('api-key') && tokens('a bb').length === 0, 'tokenizer sane');
+  console.log('memory: OK');
+}
+
+async function testPackTextImport() {
+  const { importPackFromText, buildPack } = require('../src/recipe-packs');
+  const os = require('os');
+  const fs = require('fs');
+  const recipe = { id: 'pack-import-fixture', label: 'Fixture', category: 'build', tagline: 't', template: 'Do {{task}}\n{{context}}\n{{constraints}}', placeholders: ['task', 'context', 'constraints'] };
+  const pack = buildPack({ name: 'fixture-pack', recipes: [recipe] });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mpa-pack-'));
+  try {
+    const res = await importPackFromText(JSON.stringify(pack), { scope: 'project', project: dir });
+    assert(res.imported.length === 1, 'text import writes recipes');
+    assert(fs.existsSync(path.join(dir, '.mpa', 'recipes', 'pack-import-fixture.json')), 'recipe file lands in .mpa/recipes');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  console.log('pack text import: OK');
+}
+
 async function testGoldenRegression() {
   const { runGoldenTests } = require('./golden');
   const results = await runGoldenTests({ update: process.env.GOLDEN_UPDATE === '1' });
@@ -990,6 +1024,8 @@ async function main() {
   await testBlueprintSections();
   await testBlueprintRecipes();
   await testScaffold();
+  await testMemory();
+  await testPackTextImport();
   await testGoldenRegression();
   console.log('All tests passed.');
 }

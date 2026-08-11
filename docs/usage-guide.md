@@ -160,9 +160,19 @@ node src/cli.js --consult --agent cursor --task "harden my RAG API keys" --proje
 
 # Watch it write token by token
 node src/cli.js --consult --stream --agent claude --task "merge my two scrapers"
+
+# Disable history-as-memory few-shot (on by default)
+node src/cli.js --consult --no-memory --agent cursor --task "fresh idea"
 ```
 
 If the LLM call fails, consult falls back to template mode automatically.
+
+**History-as-memory:** consult automatically retrieves up to 3 similar past
+prompts from your history (preferring human-edited, higher-scored ones) and
+feeds them to the Architect as few-shot examples, so it reuses what already
+worked for similar tasks. The web UI output pane is editable — edit the
+prompt, then copy/export; edits are recorded and prioritized as memory next
+time.
 
 ## Reasoning effort
 
@@ -205,6 +215,9 @@ node src/cli.js --chain @blueprint-ai --agent claude --task "AI security program
 node src/cli.js --chain prd-then-build,saas-starter --agent cursor \
   --task "kanban app" --export markdown --out ./out
 ```
+
+The web UI has a chain input with the preset buttons too — set the chain,
+then Forge to get the whole lifecycle in one output.
 
 ## Quality scoring
 

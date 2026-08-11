@@ -94,6 +94,16 @@ async function importPack(source, options = {}) {
     if (err instanceof SyntaxError) throw new Error(`Recipe pack is not valid JSON (${err.message}).`);
     throw err;
   }
+  return importPackFromText(JSON.stringify(pack), options);
+}
+
+async function importPackFromText(text, options = {}) {
+  let pack;
+  try {
+    pack = JSON.parse(text);
+  } catch {
+    throw new Error('Recipe pack is not valid JSON.');
+  }
   const validation = validatePack(pack);
   if (!validation.valid) throw new Error(`Invalid recipe pack: ${validation.errors.join(' | ')}`);
 
@@ -113,4 +123,4 @@ async function importPack(source, options = {}) {
   return { pack: { name: pack.name, count: pack.recipes.length }, directory, imported, skipped };
 }
 
-module.exports = { PACK_FORMAT, isUrl, normalizeSource, buildPack, validatePack, exportPack, importPack };
+module.exports = { PACK_FORMAT, PACK_VERSION, isUrl, normalizeSource, buildPack, validatePack, exportPack, importPack, importPackFromText };

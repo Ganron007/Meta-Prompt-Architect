@@ -33,6 +33,20 @@ function withCustomRecipes(config = {}) {
 app.post('/api/generate', async (req, res) => {
   try {
     const cfg = withCustomRecipes(req.body);
+    if (cfg.chain) {
+      const { parseChain, buildChain, wrapChainStep } = require('./chain');
+      const ids = parseChain(cfg.chain);
+      const chain = buildChain(ids, cfg.customRecipes);
+      const steps = [];
+      for (let i = 0; i < chain.length; i++) {
+        const prompt = await generate({ ...cfg, recipe: chain[i].id });
+        steps.push({ chainStep: chain[i], prompt: wrapChainStep(chain, i, prompt) });
+      }
+      const prompt = steps.map(s => s.prompt).join('\n\n');
+      recordEvent('generate', { agent: cfg.agent, mode: 'chain', domain: cfg.domain, recipe: ids.join('+') });
+      addHistoryEntry({ agent: cfg.agent, mode: 'chain', prompt, task: cfg.task, context: cfg.context, constraints: cfg.constraints, domain: cfg.domain, outputFormat: cfg.outputFormat, tone: cfg.tone, lang: cfg.lang, recipe: ids.join('+'), variables: cfg.variables, consult: false, rewrite: cfg.rewrite });
+      return res.json({ prompt, mode: 'chain', chain: steps.map(s => s.chainStep) });
+    }
     if (cfg.consult) {
       resolveLLM(cfg);
       const result = await consultArchitect(cfg);
@@ -76,7 +90,7 @@ app.post('/api/generate/stream', async (req, res) => {
 
 app.post('/api/export', async (req, res) => {
   try {
-    const { config, format, name } = req.body;
+    const { config, format, name, edited } = req.body;
     if (!config || typeof config !== 'object') {
       return res.status(400).json({ error: 'Missing or invalid "config" object' });
     }
@@ -92,8 +106,32 @@ app.post('/api/export', async (req, res) => {
       prompt = await generate(cfg);
     }
     const result = exportPrompt(prompt, format, name, plugins.exporters);
-    recordEvent('export', { format, agent: config.agent });
+    recordEvent('export', { format, agent: config.agent, edited: !!edited });
     res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.post('/api/packs/import', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const { importPackFromText, importPack } = require('./recipe-packs');
+    const opts = { scope: body.scope || 'project', project: body.project || process.cwd(), overwrite: body.overwrite === true };
+    const result = body.pack
+      ? await importPackFromText(JSON.stringify(body.pack), opts)
+      : await importPack(body.url || body.source, opts);
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.get('/api/packs/export', (req, res) => {
+  try {
+    const { exportPack } = require('./recipe-packs');
+    const pack = exportPack({ category: req.query.category || 'all', customRecipes: loadCustomRecipes({ project: req.query.project || process.cwd() }) });
+    res.json(pack);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

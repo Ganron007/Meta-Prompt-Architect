@@ -62,6 +62,16 @@
                 </div>
                 <span class="recipe-tagline" id="recipeTagline"></span>
                 <p class="recipe-filter-empty" id="recipeFilterEmpty" hidden>No recipes match.</p>
+                <div class="chain-row">
+                  <input type="text" id="chainInput" class="recipe-filter" placeholder="Chain: id1,id2 or @blueprint-sec" />
+                  <button id="presetBlueSec" class="btn-text" type="button">@blueprint-sec</button>
+                  <button id="presetBlueAi" class="btn-text" type="button">@blueprint-ai</button>
+                </div>
+                <div class="pack-row">
+                  <button id="importPackBtn" class="btn-text" type="button">Import pack…</button>
+                  <button id="exportPackBtn" class="btn-text" type="button">Export pack…</button>
+                  <input type="file" id="packFile" accept=".json,application/json" hidden />
+                </div>
               </div>
             <div id="recipeVariables" class="recipe-variables" hidden>
               <span class="recipe-variables-title">Recipe inputs</span>
@@ -322,7 +332,7 @@
         <div class="paper-wrap scroll">
           <div class="paper" id="paper">
             <div class="paper-rule" aria-hidden="true"></div>
-            <pre id="output" class="placeholder">Forge a prompt and it lands here —
+            <pre id="output" class="placeholder" contenteditable="true" spellcheck="false">Forge a prompt and it lands here —
 ready to copy straight into your agent.</pre>
           </div>
         </div>

@@ -599,6 +599,12 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
   margin-top: 4px;
 }
 
+.chain-row { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
+
+.chain-row .recipe-filter { flex: 1; margin-bottom: 0; }
+
+.pack-row { display: flex; gap: 12px; margin-top: 5px; }
+
 .recipe-variables {
   display: flex;
   flex-direction: column;

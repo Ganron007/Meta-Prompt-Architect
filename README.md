@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-2.0.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-37_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-45_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-121-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -56,6 +56,7 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Multi-Language** | `--lang es|ja|zh` translates template scaffolding while keeping user content and technical terms intact |
 | **Batch Generation** | Platform-tailored prompts for multiple agents in one command |
 | **Prompt History** | Local auto-save with search, replay, and clear |
+| **History-as-Memory** | Consult mode retrieves similar past prompts (preferring human-edited ones) as few-shot context â€” the Architect reuses what already worked |
 | **Version Diff** | `--history-diff id1 id2` diffs two prompts and shows which config changes produced the output changes; side-by-side view in the web UI History modal |
 | **Direct Piping** | Send prompts straight to Cursor, Claude Code, OpenCode, Aider, Windsurf, Continue, Cody, or Copilot |
 | **Web UI** | Full-viewport drafting console with dark/light themes, shareable URLs, Ctrl+Enter |
@@ -146,6 +147,7 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0â
 | `--examples` | Include examples in the prompt |
 | `--rewrite` | Polish raw input via rules or LLM |
 | `--consult` | LLM authors the prompt with project grounding (`--stream` for live tokens) |
+| `--no-memory` | Disable history-as-memory few-shot in consult mode |
 | `--scan` | Print the scanned project context and exit |
 | `--scaffold` | Write a stack-aware repo skeleton (CI workflow, Makefile, `.env.example`) to `--out/scaffold` |
 | `--recipe` | Use a one-shot recipe |
