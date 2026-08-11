@@ -105,7 +105,12 @@ app.get('/api/meta', (req, res) => {
     plats[id] = { name: p.name, type: p.type, modes: p.modes, terminal: p.terminal, multiAgent: p.multiAgent, strengths: p.strengths };
   }
   const customRecipes = loadCustomRecipes({ project: req.query.project || process.cwd() });
-  res.json({ recipes: listRecipes(customRecipes), recipeCategories, platforms: plats });
+  const llm = {
+    model: process.env.OPENAI_MODEL || null,
+    apiBase: process.env.OPENAI_BASE_URL || null,
+    reasoning: process.env.OPENAI_REASONING || null
+  };
+  res.json({ recipes: listRecipes(customRecipes), recipeCategories, platforms: plats, llm });
 });
 
 app.post('/api/recipes/preview', (req, res) => {

@@ -730,6 +730,7 @@ async function loadMeta(project) {
     const res = await fetch(`/api/meta${query}`);
     if (!res.ok) throw new Error('Unable to load recipe metadata.');
     state.meta = await res.json();
+    renderLlmHint();
     const sel = $('recipe');
     sel.innerHTML = '<option value="">None — freeform task</option>';
     const grouped = {};
@@ -754,6 +755,22 @@ async function loadMeta(project) {
     renderPlatformChips($('agent').value);
     onRecipeChange();
   } catch { /* meta is optional — UI still works without it */ }
+}
+
+function renderLlmHint() {
+  const hint = $('llmHint');
+  const llm = state.meta && state.meta.llm;
+  const modelInput = $('model');
+  if (!llm) return;
+  if (llm.model) {
+    const host = llm.apiBase ? llm.apiBase.replace(/^https?:\/\//, '').replace(/\/+$/, '') : 'configured endpoint';
+    hint.textContent = `Server LLM: ${llm.model} · ${host}${llm.reasoning ? ` · reasoning ${llm.reasoning}` : ''}`;
+    if (!modelInput.value) modelInput.placeholder = llm.model;
+  } else {
+    hint.textContent = 'No LLM configured on the server — consult mode needs OPENAI_* in .env or the API key field below.';
+    hint.classList.add('warn');
+  }
+  hint.hidden = false;
 }
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));

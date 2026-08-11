@@ -79,6 +79,32 @@ Agents: `cursor`, `claude`, `opencode`, `deepseek`, `kimi`, `gpt`, `windsurf`,
 `cline`, `generic`. Domains: `lab-build`, `code-review`, `security`,
 `feature-exploration`, `release-readiness`, `general`.
 
+### Recipe vs Domain — which one do I use?
+
+They shape the prompt in two mutually exclusive ways:
+
+| | Recipe | Domain |
+|---|---|---|
+| What it is | A complete proven mega-prompt (role, workflow, rules) for a task category | A generic angle applied to freeform template output |
+| Used when | You know the *kind* of work (`dfir-network-forensics`, `threat-model`) | You have a freeform task and no matching recipe |
+| Effect on prompt | The recipe template IS the prompt body | The domain profile sets the perspective (lab build, review, security...) |
+| Interaction | Recipe selected → domain ignored | No recipe → domain applies |
+
+### Task / Context / Constraints — what do they do?
+
+All three are the *inputs* your prompt is built from, in every mode:
+
+- **Task** (required) — the mission statement. Becomes the objective (or the
+  recipe's task slot).
+- **Context** — background the agent cannot infer: existing stack, file names,
+  prior attempts. Rendered as an "Additional context" section.
+- **Constraints** — hard rules it must obey ("no breaking API changes",
+  "cite file:line"). Rendered as rules.
+
+On top of these, the tool *auto-adds* project grounding (scanned facts),
+the execution loop, ship plan, test matrix, and quality gates — so your
+inputs only need to carry intent, not boilerplate.
+
 ## Project grounding
 
 Every prompt is automatically prefilled with real facts from your project —

@@ -502,7 +502,17 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
   margin-top: -4px;
 }
 
-.llm-config.open { max-height: 420px; opacity: 1; margin-top: 4px; }
+.llm-config.open { max-height: 480px; opacity: 1; margin-top: 4px; }
+
+.llm-hint {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--teal);
+  opacity: 0.9;
+}
+
+.llm-hint.warn { color: var(--danger); }
 
 .llm-inner {
   display: flex;

@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Web UI LLM indicator**: `/api/meta` now exposes the configured LLM
+  (model, base URL, reasoning effort — never the API key) and the UI shows
+  "Server LLM: <model> · <host>" with the model field's placeholder set, so
+  users always know which model consult mode uses.
+
 ## [2.0.0] - 2026-08-05
 
 ### Changed

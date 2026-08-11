@@ -64,7 +64,10 @@ Errors: 400 for non-existent paths.
 
 Static metadata for the UI.
 
-**Response:** `{ "recipes": [{ "id", "label", "tagline", "category", "taskHint", "placeholders", "source" }], "recipeCategories": {...}, "platforms": { "<id>": { "name", "type", "modes", "terminal", "multiAgent", "strengths" } } }`
+**Response:** `{ "recipes": [{ "id", "label", "tagline", "category", "taskHint", "placeholders", "source" }], "recipeCategories": {...}, "platforms": { "<id>": { "name", "type", "modes", "terminal", "multiAgent", "strengths" } }, "llm": { "model", "apiBase", "reasoning" } }`
+
+`llm` mirrors the server's `.env` configuration (model, base URL, reasoning
+effort) and never contains the API key; fields are `null` when not configured.
 
 Custom recipes from `.mpa/recipes/` are included (`source: "custom"`).
 
