@@ -808,8 +808,8 @@ $('llmMoreBtn').addEventListener('click', () => {
 
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
 $('recipe').addEventListener('change', onRecipeChange);
-$('presetBlueSec').addEventListener('click', () => { $('chainInput').value = '@blueprint-sec'; showToast('Chain preset set — forge to build the full lifecycle.'); });
-$('presetBlueAi').addEventListener('click', () => { $('chainInput').value = '@blueprint-ai'; showToast('Chain preset set — forge to build the full lifecycle.'); });
+$('presetBlueSec').addEventListener('click', () => { $('chainInput').value = '@blueprint-sec'; showToast('Security platform chain set \u2014 forge to build lab \u2192 tool \u2192 governance.'); });
+$('presetBlueAi').addEventListener('click', () => { $('chainInput').value = '@blueprint-ai'; showToast('AI security chain set \u2014 forge to build targets \u2192 scanner \u2192 model.'); });
 $('importPackBtn').addEventListener('click', () => $('packFile').click());
 $('packFile').addEventListener('change', async (e) => {
   const file = e.target.files[0];
