@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Layered web UI**: a mode selector (Freeform task / Recipe / Chain) now
+  drives what is shown — Domain + task scope + lean + examples appear only in
+  freeform mode, the recipe picker only in recipe mode, the chain input +
+  presets only in chain mode. Conflicting options can no longer be selected
+  at once; the client sends only the fields relevant to the chosen mode.
+- **Cancel button**: in-flight forges and streams can be aborted (fetch
+  AbortController; streaming cancels the reader). Status shows "Cancelled by
+  user."
+- **Per-field clear buttons**: ✕ clear on Task / Context / Constraints, plus
+  "Clear all" resets inputs, filters, chain, and recipe variables.
 - **Task granularity**: `--granularity auto|micro|task|mega` (and a web UI
   Task scope selector). Micro = goal-first, one-line loop, no playbook or
   boilerplate; task = full template; mega = recipe contract; auto picks by

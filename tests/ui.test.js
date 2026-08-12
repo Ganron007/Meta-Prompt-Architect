@@ -106,6 +106,24 @@ async function testUiModalsHidden() {
   console.log('ui modals hidden: OK');
 }
 
+async function testUiTaskModes() {
+  const w = makeUi();
+  await wait(80);
+  assert($(w, 'layerFreeform').hidden === false, 'freeform layer visible by default');
+  assert($(w, 'layerRecipe').hidden === true && $(w, 'layerChain').hidden === true, 'recipe/chain layers hidden by default');
+  const btn = w.document.querySelector('.mode-seg button[data-mode="recipe"]');
+  fire(w, btn, 'click');
+  assert($(w, 'layerFreeform').hidden === true && $(w, 'layerRecipe').hidden === false, 'recipe mode swaps layers');
+  const chainBtn = w.document.querySelector('.mode-seg button[data-mode="chain"]');
+  fire(w, chainBtn, 'click');
+  assert($(w, 'layerChain').hidden === false && $(w, 'layerRecipe').hidden === true, 'chain mode shows chain layer');
+  assert($(w, 'presetBlueSec').hidden === false && $(w, 'presetBlueAi').hidden === false, 'chain presets visible in chain layer');
+  fire(w, w.document.querySelector('.mode-seg button[data-mode="freeform"]'), 'click');
+  assert($(w, 'layerFreeform').hidden === false, 'back to freeform restores layer');
+  assert($(w, 'cancelBtn').hidden === true, 'cancel button hidden when idle');
+  console.log('ui task modes: OK');
+}
+
 async function main() {
   await testUiMetaAndLlm();
   await testUiLlmToggle();
@@ -113,6 +131,7 @@ async function main() {
   await testUiRecipeFilter();
   await testUiRecipeVariablesHidden();
   await testUiModalsHidden();
+  await testUiTaskModes();
   console.log('All UI tests passed.');
 }
 

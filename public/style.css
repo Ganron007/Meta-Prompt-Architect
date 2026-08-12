@@ -611,6 +611,51 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
 
 .lean-switch { align-self: flex-end; margin-bottom: 4px; }
 
+.mode-seg {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 3px;
+  background: var(--panel-deep);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.mode-seg button {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.mode-seg button:hover { color: var(--text); }
+
+.mode-seg button.active {
+  background: color-mix(in srgb, var(--teal) 18%, transparent);
+  color: var(--teal);
+}
+
+.field-clear {
+  font-size: 10px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.field-clear:hover { color: var(--danger); }
+
+#layerFreeform, #layerRecipe, #layerChain { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+
+#layerFreeform[hidden], #layerRecipe[hidden], #layerChain[hidden] { display: none; }
+
 .recipe-variables {
   display: flex;
   flex-direction: column;

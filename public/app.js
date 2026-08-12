@@ -1,7 +1,8 @@
 const state = {
   prompt: '',
   config: {},
-  meta: null
+  meta: null,
+  abort: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -16,22 +17,17 @@ const CATEGORY_LABELS = {
 
 function getConfig() {
   const consult = $('consult').checked;
-  return {
+  const mode = currentMode();
+  const config = {
     agent: $('agent').value,
-    domain: $('domain').value,
     task: $('task').value.trim(),
     context: $('context').value.trim(),
     constraints: $('constraints').value.trim(),
     outputFormat: $('outputFormat').value,
     tone: $('tone').value,
     lang: $('lang').value,
-    includeExamples: $('includeExamples').checked,
     consult,
     rewrite: $('rewrite').checked,
-    recipe: $('recipe').value || undefined,
-    chain: $('chainInput').value.trim() || undefined,
-    granularity: $('granularity').value,
-    lean: $('lean').checked,
     model: $('model').value.trim(),
     apiKey: $('apiKey').value.trim(),
     apiBase: $('apiBase').value.trim(),
@@ -39,7 +35,34 @@ function getConfig() {
     project: $('builderProject').value.trim() || $('project').value.trim() || undefined,
     variables: getRecipeVariables()
   };
+  if (mode === 'freeform') {
+    config.domain = $('domain').value;
+    config.granularity = $('granularity').value;
+    config.lean = $('lean').checked;
+    config.includeExamples = $('includeExamples').checked;
+  } else if (mode === 'recipe') {
+    config.recipe = $('recipe').value || undefined;
+  } else if (mode === 'chain') {
+    config.chain = $('chainInput').value.trim() || undefined;
+  }
+  return config;
 }
+
+function currentMode() {
+  const active = document.querySelector('.mode-seg button.active');
+  return active ? active.dataset.mode : 'freeform';
+}
+
+function setTaskMode(mode) {
+  $('layerFreeform').hidden = mode !== 'freeform';
+  $('layerRecipe').hidden = mode !== 'recipe';
+  $('layerChain').hidden = mode !== 'chain';
+  document.querySelectorAll('.mode-seg button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+}
+
+document.querySelectorAll('.mode-seg button').forEach(btn => {
+  btn.addEventListener('click', () => setTaskMode(btn.dataset.mode));
+});
 
 function getRecipeVariables() {
   const variables = {};
@@ -90,18 +113,28 @@ async function generate() {
   const label = btn.querySelector('.btn-label');
   btn.disabled = true;
   label.textContent = 'Forging\u2026';
+  $('cancelBtn').hidden = false;
+  const controller = new AbortController();
+  state.abort = controller;
   $('paper').parentElement.classList.add('forging');
   setStatus(config.consult ? 'Consulting the Architect\u2026' : 'Templating prompt\u2026', 'busy');
 
+  const cancelled = () => {
+    setStatus('Cancelled by user.', '');
+    showToast('Request cancelled.');
+    $('outputMeta').textContent = 'cancelled';
+  };
+
   try {
     if (config.consult && $('stream').checked) {
-      await generateStreaming(config, btn, label);
+      await generateStreaming(config, btn, label, controller.signal);
       return;
     }
     const res = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config)
+      body: JSON.stringify(config),
+      signal: controller.signal
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -139,14 +172,24 @@ async function generate() {
     }
     showToast('Prompt forged.');
   } catch (err) {
-    setStatus(`Failed: ${err.message}`, 'err');
-    showToast(err.message || 'Generation failed.', 'error');
+    if (err.name === 'AbortError') {
+      cancelled();
+    } else {
+      setStatus(`Failed: ${err.message}`, 'err');
+      showToast(err.message || 'Generation failed.', 'error');
+    }
   } finally {
     btn.disabled = false;
     label.textContent = 'Forge prompt';
+    $('cancelBtn').hidden = true;
+    state.abort = null;
     $('paper').parentElement.classList.remove('forging');
   }
 }
+
+$('cancelBtn').addEventListener('click', () => {
+  if (state.abort) state.abort.abort();
+});
 
 async function generateStreaming(config, btn, label) {
   const out = $('output');
@@ -156,7 +199,8 @@ async function generateStreaming(config, btn, label) {
   const res = await fetch('/api/generate/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config)
+    body: JSON.stringify(config),
+    signal
   });
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({}));
@@ -166,26 +210,38 @@ async function generateStreaming(config, btn, label) {
   const decoder = new TextDecoder();
   let buffer = '';
   let final = null;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const events = buffer.split('\n\n');
-    buffer = events.pop();
-    for (const chunk of events) {
-      const line = chunk.split('\n').find(l => l.startsWith('data:'));
-      if (!line) continue;
-      let data;
-      try { data = JSON.parse(line.slice(5).trim()); } catch { continue; }
-      if (data.error) throw new Error(data.error);
-      if (data.token) {
-        out.textContent += data.token;
-        $('outputMeta').textContent = `${wordCount(out.textContent)} words · streaming`;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop();
+      for (const chunk of events) {
+        const line = chunk.split('\n').find(l => l.startsWith('data:'));
+        if (!line) continue;
+        let data;
+        try { data = JSON.parse(line.slice(5).trim()); } catch { continue; }
+        if (data.error) throw new Error(data.error);
+        if (data.token) {
+          out.textContent += data.token;
+          $('outputMeta').textContent = `${wordCount(out.textContent)} words · streaming`;
+        }
+        if (data.done) final = data;
       }
-      if (data.done) final = data;
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      try { await reader.cancel(); } catch {}
+      setStatus('Cancelled by user.', '');
+      showToast('Stream cancelled.');
+      $('outputMeta').textContent = 'cancelled';
+    } else {
+      throw err;
     }
   }
-  if (!final) throw new Error('Stream ended without a final prompt.');
+  if (!final && !out.textContent.trim()) throw new Error('Stream ended without a final prompt.');
+  if (!final) return;
   state.prompt = final.prompt;
   state.config = config;
   out.textContent = final.prompt;
@@ -268,11 +324,18 @@ function replayPaper() {
 }
 
 function clearInputs() {
-  ['task', 'context', 'constraints'].forEach(id => { $(id).value = ''; });
+  ['task', 'context', 'constraints', 'recipeFilter', 'chainInput'].forEach(id => { $(id).value = ''; });
   document.querySelectorAll('[data-recipe-variable]').forEach(input => { input.value = ''; });
   $('task').focus();
-  showToast('Inputs cleared.');
+  showToast('All inputs cleared.');
 }
+
+document.querySelectorAll('[data-clear]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const el = $(btn.dataset.clear);
+    if (el) { el.value = ''; el.focus(); showToast('Field cleared.'); }
+  });
+});
 
 function clearOutput() {
   state.prompt = '';
@@ -329,6 +392,7 @@ function loadFromUrl() {
   if (params.get('e') === '1') $('includeExamples').checked = true;
   if (params.get('k') === '1') $('consult').checked = true;
   if (params.get('r') === '1') $('rewrite').checked = true;
+  if (params.get('p')) setTaskMode('recipe');
   toggleLLMConfig();
   onRecipeChange();
   if (params.get('t')) {
@@ -806,15 +870,7 @@ $('llmMoreBtn').addEventListener('click', () => {
   btn.textContent = custom.hidden ? '+ Add another LLM' : '− Close custom LLM';
 });
 
-function updateChainPresets() {
-  const presets = $('chainPresets');
-  if (!presets) return;
-  presets.hidden = $('domain').value !== 'lab-build';
-}
-
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
-$('domain').addEventListener('change', updateChainPresets);
-updateChainPresets();
 $('recipe').addEventListener('change', onRecipeChange);
 $('presetBlueSec').addEventListener('click', () => { $('chainInput').value = '@blueprint-sec'; showToast('Security platform chain set \u2014 forge to build lab \u2192 tool \u2192 governance.'); });
 $('presetBlueAi').addEventListener('click', () => { $('chainInput').value = '@blueprint-ai'; showToast('AI security chain set \u2014 forge to build targets \u2192 scanner \u2192 model.'); });

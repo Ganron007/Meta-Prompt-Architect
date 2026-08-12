@@ -49,6 +49,73 @@
         <div class="pane-body scroll">
           <fieldset class="group">
             <legend>The ask</legend>
+            <div class="mode-seg" role="tablist" aria-label="Task mode">
+              <button type="button" class="active" data-mode="freeform" role="tab">Freeform task</button>
+              <button type="button" data-mode="recipe" role="tab">Recipe</button>
+              <button type="button" data-mode="chain" role="tab">Chain</button>
+            </div>
+            <div class="field">
+              <div class="field-label-row">
+                <label for="task">Task / objective</label>
+                <button class="btn-text field-clear" type="button" data-clear="task" title="Clear this field">✕ clear</button>
+              </div>
+              <textarea id="task" rows="6" placeholder="Full plan, rough idea, arrow lists — paste anything. Nothing gets dropped."></textarea>
+            </div>
+            <div class="field">
+              <div class="field-label-row">
+                <label for="context">Context <span class="optional">optional</span></label>
+                <button class="btn-text field-clear" type="button" data-clear="context" title="Clear this field">✕ clear</button>
+              </div>
+              <textarea id="context" rows="3" placeholder="Background, environment, files, paths..."></textarea>
+            </div>
+            <div class="field">
+              <div class="field-label-row">
+                <label for="constraints">Constraints <span class="optional">optional</span></label>
+                <button class="btn-text field-clear" type="button" data-clear="constraints" title="Clear this field">✕ clear</button>
+              </div>
+              <textarea id="constraints" rows="2" placeholder="e.g. no hardcoded secrets, one-shot accuracy, keep under 500 lines..."></textarea>
+            </div>
+
+            <div id="layerFreeform">
+              <div class="field-row">
+                <div class="field">
+                  <label for="domain">Domain</label>
+                  <div class="select-wrap">
+                    <select id="domain">
+                      <option value="lab-build">Lab Builds &amp; Infrastructure</option>
+                      <option value="code-review">Code Review &amp; Quality</option>
+                      <option value="security">Security Review &amp; Hardening</option>
+                      <option value="feature-exploration">Feature Exploration &amp; R&amp;D</option>
+                      <option value="release-readiness">Release &amp; Public Readiness</option>
+                      <option value="general">General</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="granularity">Task scope</label>
+                  <div class="select-wrap">
+                    <select id="granularity">
+                      <option value="auto">Auto (by task size)</option>
+                      <option value="micro">Micro — single goal, lean</option>
+                      <option value="task">Task — full template</option>
+                      <option value="mega">Mega — recipe contract</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="lean" />
+                <span class="slider"></span>
+                <span class="switch-label">Lean — goal only, no boilerplate</span>
+              </label>
+              <label class="switch">
+                <input type="checkbox" id="includeExamples" />
+                <span class="slider"></span>
+                <span class="switch-label">Include examples in the prompt</span>
+              </label>
+            </div>
+
+            <div id="layerRecipe" hidden>
               <div class="field">
                 <div class="field-label-row">
                   <label for="recipe">Recipe <span class="optional">proven one-shot patterns</span></label>
@@ -62,12 +129,9 @@
                 </div>
                 <span class="recipe-tagline" id="recipeTagline"></span>
                 <p class="recipe-filter-empty" id="recipeFilterEmpty" hidden>No recipes match.</p>
-                <div class="chain-row">
-                  <input type="text" id="chainInput" class="recipe-filter" placeholder="Chain recipes: id1,id2 or pick a preset" />
-                  <span id="chainPresets" class="chain-presets" hidden>
-                    <button id="presetBlueSec" class="btn-text" type="button" title="Chain: ad-soc-lab → mcp-sec-tool → grc-risk-pipeline — build the lab, then the tool, then the governance">Chain: security platform</button>
-                    <button id="presetBlueAi" class="btn-text" type="button" title="Chain: vuln-ai-lab → ai-audit-cli → llm-finetune-study — vulnerable targets, the scanner, the fine-tuned model">Chain: AI security</button>
-                  </span>
+                <div id="recipeVariables" class="recipe-variables" hidden>
+                  <span class="recipe-variables-title">Recipe inputs</span>
+                  <div id="recipeVariableFields" class="recipe-variable-fields"></div>
                 </div>
                 <div class="pack-row">
                   <button id="importPackBtn" class="btn-text" type="button">Import pack…</button>
@@ -75,21 +139,17 @@
                   <input type="file" id="packFile" accept=".json,application/json" hidden />
                 </div>
               </div>
-            <div id="recipeVariables" class="recipe-variables" hidden>
-              <span class="recipe-variables-title">Recipe inputs</span>
-              <div id="recipeVariableFields" class="recipe-variable-fields"></div>
             </div>
-            <div class="field">
-              <label for="task">Task / objective</label>
-              <textarea id="task" rows="6" placeholder="Full plan, rough idea, arrow lists — paste anything. Nothing gets dropped."></textarea>
-            </div>
-            <div class="field">
-              <label for="context">Context <span class="optional">optional</span></label>
-              <textarea id="context" rows="3" placeholder="Background, environment, files, paths..."></textarea>
-            </div>
-            <div class="field">
-              <label for="constraints">Constraints <span class="optional">optional</span></label>
-              <textarea id="constraints" rows="2" placeholder="e.g. no hardcoded secrets, one-shot accuracy, keep under 500 lines..."></textarea>
+
+            <div id="layerChain" hidden>
+              <div class="field">
+                <label for="chainInput">Chain recipes</label>
+                <input type="text" id="chainInput" class="recipe-filter" placeholder="id1,id2 — or pick a preset" />
+              </div>
+              <div class="chain-presets">
+                <button id="presetBlueSec" class="btn-text" type="button" title="Chain: ad-soc-lab → mcp-sec-tool → grc-risk-pipeline — build the lab, then the tool, then the governance">Chain: security platform</button>
+                <button id="presetBlueAi" class="btn-text" type="button" title="Chain: vuln-ai-lab → ai-audit-cli → llm-finetune-study — vulnerable targets, the scanner, the fine-tuned model">Chain: AI security</button>
+              </div>
             </div>
           </fieldset>
 
@@ -152,41 +212,30 @@
 
           <fieldset class="group">
             <legend>Target</legend>
-            <div class="field-row">
-              <div class="field">
-                <label for="agent">Agent</label>
-                <div class="select-wrap">
-                  <select id="agent">
-                    <option value="cursor">Cursor</option>
-                    <option value="deepseek">DeepSeek</option>
-                    <option value="kimi">Kimi</option>
-                    <option value="claude">Claude</option>
-                    <option value="gpt">ChatGPT / GPT</option>
-                    <option value="windsurf">Windsurf</option>
-                    <option value="cline">Cline / Roo Code</option>
-                    <option value="opencode">OpenCode</option>
-                    <option value="generic">Generic</option>
-                  </select>
-                </div>
-                <div class="platform-chips" id="platformChips"></div>
+            <div class="field">
+              <label for="agent">Agent</label>
+              <div class="select-wrap">
+                <select id="agent">
+                  <option value="cursor">Cursor</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="kimi">Kimi</option>
+                  <option value="claude">Claude</option>
+                  <option value="gpt">ChatGPT / GPT</option>
+                  <option value="windsurf">Windsurf</option>
+                  <option value="cline">Cline / Roo Code</option>
+                  <option value="opencode">OpenCode</option>
+                  <option value="generic">Generic</option>
+                </select>
               </div>
-              <div class="field">
-                <label for="domain">Domain</label>
-                <div class="select-wrap">
-                  <select id="domain">
-                    <option value="lab-build">Lab Builds &amp; Infrastructure</option>
-                    <option value="code-review">Code Review &amp; Quality</option>
-                    <option value="security">Security Review &amp; Hardening</option>
-                    <option value="feature-exploration">Feature Exploration &amp; R&amp;D</option>
-                    <option value="release-readiness">Release &amp; Public Readiness</option>
-                    <option value="general">General</option>
-                  </select>
-                </div>
-              </div>
+              <div class="platform-chips" id="platformChips"></div>
             </div>
+          </fieldset>
+
+          <fieldset class="group">
+            <legend>Output</legend>
             <div class="field-row">
               <div class="field">
-                <label for="outputFormat">Output format</label>
+                <label for="outputFormat">Format</label>
                 <div class="select-wrap">
                   <select id="outputFormat">
                     <option value="markdown">Markdown</option>
@@ -220,29 +269,6 @@
                 </div>
               </div>
             </div>
-            <div class="field-row">
-              <div class="field">
-                <label for="granularity">Task scope</label>
-                <div class="select-wrap">
-                  <select id="granularity">
-                    <option value="auto">Auto (by task size)</option>
-                    <option value="micro">Micro — single goal, lean</option>
-                    <option value="task">Task — full template</option>
-                    <option value="mega">Mega — recipe contract</option>
-                  </select>
-                </div>
-              </div>
-              <label class="switch lean-switch">
-                <input type="checkbox" id="lean" />
-                <span class="slider"></span>
-                <span class="switch-label">Lean — goal only, no boilerplate</span>
-              </label>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="includeExamples" />
-              <span class="slider"></span>
-              <span class="switch-label">Include examples in the prompt</span>
-            </label>
           </fieldset>
 
           <fieldset class="group">
@@ -313,7 +339,8 @@
             <span class="btn-label">Forge prompt</span>
             <span class="btn-kbd">Ctrl &#8629;</span>
           </button>
-          <button id="clearInputsBtn" class="btn-ghost" title="Clear task, context, and constraints">Clear</button>
+          <button id="cancelBtn" class="btn-ghost" hidden title="Stop the running request">Cancel</button>
+          <button id="clearInputsBtn" class="btn-ghost" title="Clear all inputs (task, context, constraints, filters, chain)">Clear all</button>
         </div>
       </section>
 
