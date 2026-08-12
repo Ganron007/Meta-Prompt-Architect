@@ -603,6 +603,10 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
 
 .chain-row .recipe-filter { flex: 1; margin-bottom: 0; }
 
+.chain-presets { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+.chain-presets[hidden] { display: none; }
+
 .pack-row { display: flex; gap: 12px; margin-top: 5px; }
 
 .lean-switch { align-self: flex-end; margin-bottom: 4px; }

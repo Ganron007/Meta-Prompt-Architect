@@ -806,7 +806,15 @@ $('llmMoreBtn').addEventListener('click', () => {
   btn.textContent = custom.hidden ? '+ Add another LLM' : '− Close custom LLM';
 });
 
+function updateChainPresets() {
+  const presets = $('chainPresets');
+  if (!presets) return;
+  presets.hidden = $('domain').value !== 'lab-build';
+}
+
 $('agent').addEventListener('change', () => renderPlatformChips($('agent').value));
+$('domain').addEventListener('change', updateChainPresets);
+updateChainPresets();
 $('recipe').addEventListener('change', onRecipeChange);
 $('presetBlueSec').addEventListener('click', () => { $('chainInput').value = '@blueprint-sec'; showToast('Security platform chain set \u2014 forge to build lab \u2192 tool \u2192 governance.'); });
 $('presetBlueAi').addEventListener('click', () => { $('chainInput').value = '@blueprint-ai'; showToast('AI security chain set \u2014 forge to build targets \u2192 scanner \u2192 model.'); });

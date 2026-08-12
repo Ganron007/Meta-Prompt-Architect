@@ -64,8 +64,10 @@
                 <p class="recipe-filter-empty" id="recipeFilterEmpty" hidden>No recipes match.</p>
                 <div class="chain-row">
                   <input type="text" id="chainInput" class="recipe-filter" placeholder="Chain recipes: id1,id2 or pick a preset" />
-                  <button id="presetBlueSec" class="btn-text" type="button" title="Chain: ad-soc-lab → mcp-sec-tool → grc-risk-pipeline — build the lab, then the tool, then the governance">Chain: security platform</button>
-                  <button id="presetBlueAi" class="btn-text" type="button" title="Chain: vuln-ai-lab → ai-audit-cli → llm-finetune-study — vulnerable targets, the scanner, the fine-tuned model">Chain: AI security</button>
+                  <span id="chainPresets" class="chain-presets" hidden>
+                    <button id="presetBlueSec" class="btn-text" type="button" title="Chain: ad-soc-lab → mcp-sec-tool → grc-risk-pipeline — build the lab, then the tool, then the governance">Chain: security platform</button>
+                    <button id="presetBlueAi" class="btn-text" type="button" title="Chain: vuln-ai-lab → ai-audit-cli → llm-finetune-study — vulnerable targets, the scanner, the fine-tuned model">Chain: AI security</button>
+                  </span>
                 </div>
                 <div class="pack-row">
                   <button id="importPackBtn" class="btn-text" type="button">Import pack…</button>
