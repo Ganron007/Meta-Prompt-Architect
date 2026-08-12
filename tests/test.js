@@ -37,8 +37,8 @@ async function testGenerator() {
     tone: 'professional',
     includeExamples: true
   });
-  assert(prompt.includes('Role: Senior IDE Pair Programmer'), 'Should include agent role');
-  assert(prompt.includes('Review API key handling'), 'Should include task');
+  assert(prompt.includes('Senior IDE Pair Programmer'), 'Should include agent role');
+  assert(prompt.includes('## Goal') && prompt.includes('Review API key handling'), 'Should include goal-first task');
   assert(prompt.includes('No hardcoded secrets'), 'Should include constraints');
   console.log('generator: OK');
 }
@@ -249,7 +249,8 @@ async function testPlatformInTemplate() {
   const prompt = await generate({
     agent: 'claude',
     domain: 'code-review',
-    task: 'Review the auth module'
+    task: 'Review the auth module thoroughly and produce a prioritized remediation plan with file-level citations',
+    granularity: 'task'
   });
   assert(prompt.includes('Platform Playbook'), 'template prompt should include platform playbook');
   assert(prompt.includes('CLAUDE.md'), 'claude prompt should reference CLAUDE.md');
@@ -287,8 +288,8 @@ function testHistory() {
 
 async function testBatchGeneration() {
   const { generate } = require('../src/generator');
-  const cursorPrompt = await generate({ agent: 'cursor', task: 'Test', domain: 'security' });
-  const claudePrompt = await generate({ agent: 'claude', task: 'Test', domain: 'security' });
+  const cursorPrompt = await generate({ agent: 'cursor', task: 'Test', domain: 'security', granularity: 'task' });
+  const claudePrompt = await generate({ agent: 'claude', task: 'Test', domain: 'security', granularity: 'task' });
   assert(cursorPrompt.includes('Cursor Platform Playbook'), 'cursor batch should have cursor playbook');
   assert(claudePrompt.includes('Claude / Claude Code Platform Playbook'), 'claude batch should have claude playbook');
   assert(cursorPrompt !== claudePrompt, 'different agents should produce different prompts');
@@ -486,21 +487,21 @@ async function testI18n() {
     assert(Object.keys(t.outputSpecs).length === 6, `${lang} has all output specs`);
   }
 
-  const es = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling', lang: 'es' });
-  assert(es.includes('Rol: Senior IDE Pair Programmer especializado en Security Review & Hardening'), 'es role line');
+  const es = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling', lang: 'es', granularity: 'task' });
+  assert(es.includes('# Senior IDE Pair Programmer — Security Review & Hardening'), 'es title line');
   assert(es.includes('## Contexto y restricciones'), 'es context heading');
-  assert(es.includes('## Objetivo'), 'es objective heading');
+  assert(es.includes('## Objetivo'), 'es goal heading');
   assert(es.includes('Review API key handling'), 'user task stays verbatim');
   assert(es.includes('Platform Playbook'), 'playbook stays English');
-  const ja = await generate({ agent: 'claude', task: '認証モジュールをレビュー', lang: 'ja' });
-  assert(ja.includes('ロール:'), 'ja role line');
+  const ja = await generate({ agent: 'claude', task: '認証モジュールをレビュー', lang: 'ja', granularity: 'task' });
+  assert(ja.includes('## ゴール'), 'ja goal heading');
   assert(ja.includes('認証モジュールをレビュー'), 'ja task verbatim');
-  assert(ja.includes('## 目的'), 'ja objective heading');
+  assert(ja.includes('## コンテキストと制約'), 'ja context heading');
   const zh = await generate({ agent: 'gpt', task: 'test', lang: 'zh', outputFormat: 'json' });
   assert(zh.includes('## 输出格式'), 'zh output heading');
   assert(zh.includes('JSON 对象'), 'zh json spec translated');
-  const en = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling' });
-  assert(en.includes('# Role: Senior IDE Pair Programmer specializing in Security Review & Hardening'), 'default English unchanged');
+  const en = await generate({ agent: 'cursor', domain: 'security', task: 'Review API key handling', granularity: 'task' });
+  assert(en.includes('# Senior IDE Pair Programmer — Security Review & Hardening'), 'default English unchanged');
   console.log('i18n: OK');
 }
 
@@ -658,7 +659,7 @@ async function testPlugins() {
   const fallback = exportPrompt('PROMPT BODY', 'cursorrules', 'test', plugins.exporters);
   assert(fallback.ext === '.cursorrules', 'built-in exporters unaffected');
 
-  const prompt = await generate({ agent: 'acme', task: 'do the thing', enhanceWith: 'shout', pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers });
+  const prompt = await generate({ agent: 'acme', task: 'do the thing', granularity: 'task', enhanceWith: 'shout', pluginPlatforms: plugins.platforms, pluginEnhancers: plugins.enhancers });
   assert(prompt.includes('DO THE THING'), 'plugin enhancer uppercased the task');
   assert(prompt.includes('Acme Agent Platform Playbook'), 'plugin platform used in generation');
   await assert.rejects(() => generate({ task: 'x', enhanceWith: 'nope', pluginEnhancers: plugins.enhancers }), /Unknown plugin enhancer/, 'unknown enhancer rejected');
@@ -837,7 +838,7 @@ async function testIntegrationSweep() {
   const agents = ['cursor', 'deepseek', 'kimi', 'claude', 'gpt', 'windsurf', 'cline', 'opencode', 'generic'];
   const prompts = {};
   for (const agent of agents) {
-    const prompt = await generate({ agent, task: 'integration sweep', domain: 'security' });
+    const prompt = await generate({ agent, task: 'integration sweep', domain: 'security', granularity: 'task' });
     assert(prompt.includes('Platform Playbook'), `agent ${agent} gets a platform playbook`);
     prompts[agent] = prompt;
   }
@@ -859,18 +860,18 @@ async function testBlueprintSections() {
   const infra = detectStack({ 'docker-compose.yml': 'services:', 'Vagrantfile': 'Vagrant.configure' }, '');
   assert(infra.includes('docker') && infra.includes('vagrant'), 'infra stack');
 
-  const sec = await generate({ agent: 'cursor', domain: 'security', task: 'review API' });
+  const sec = await generate({ agent: 'cursor', domain: 'security', task: 'review API', granularity: 'task' });
   assert(sec.includes('Safety & Governance') && sec.includes('Compliance Mapping') && sec.includes('Honest Quality Gates'), 'security prompt carries safety/compliance/honesty');
   assert(sec.includes('MITRE ATT&CK'), 'classic compliance mapping');
 
   const aiSec = await generate({ agent: 'cursor', domain: 'security', task: 'x', recipe: 'aisec-prompt-injection' });
   assert(aiSec.includes('OWASP LLM Top 10'), 'AI-security compliance mapping');
 
-  const buildPrompt = await generate({ agent: 'cursor', domain: 'lab-build', task: 'build a tool', projectScan: { stack: ['tauri', 'node'], commands: ['npm test'], root: '/x', tree: 'x/' } });
+  const buildPrompt = await generate({ agent: 'cursor', domain: 'lab-build', task: 'build a tool', granularity: 'task', projectScan: { stack: ['tauri', 'node'], commands: ['npm test'], root: '/x', tree: 'x/' } });
   assert(buildPrompt.includes('Ship Plan') && buildPrompt.includes('tauri build'), 'stack-aware ship plan');
   assert(buildPrompt.includes('Test Matrix'), 'build prompts carry test matrix');
 
-  const chat = await generate({ agent: 'deepseek', task: 'explain DNS' });
+  const chat = await generate({ agent: 'deepseek', task: 'explain DNS', granularity: 'task' });
   assert(!chat.includes('Ship Plan') && !chat.includes('Safety & Governance'), 'non-build/non-sec prompts stay lean');
   assert(chat.includes('Honest Quality Gates'), 'honest gates are universal');
   console.log('blueprint sections: OK');
@@ -943,6 +944,89 @@ async function testPackTextImport() {
   console.log('pack text import: OK');
 }
 
+async function testGranularity() {
+  const micro = await generate({ task: 'fix login bug', agent: 'cursor' });
+  assert(micro.includes('## Goal') && micro.includes('fix login bug'), 'micro has goal');
+  assert(!micro.includes('Platform Playbook'), 'micro skips playbook');
+  assert(!micro.includes('Test Matrix') && !micro.includes('Honest Quality Gates'), 'micro skips boilerplate');
+  assert(micro.includes('Loop: PLAN'), 'micro keeps one-line loop');
+
+  const longTask = 'Refactor the authentication module to use OAuth2 with refresh tokens and device flow support, add integration tests, and update the API documentation for the new endpoints.';
+  const autoTask = await generate({ task: longTask, agent: 'cursor' });
+  assert(autoTask.includes('Platform Playbook'), 'long task auto-resolves to task granularity');
+
+  const explicit = await generate({ task: 'fix x', agent: 'cursor', granularity: 'task' });
+  assert(explicit.includes('Platform Playbook') && explicit.includes('## Goal'), 'explicit task granularity wins over auto');
+
+  const lean = await generate({ task: longTask, agent: 'cursor', domain: 'lab-build', lean: true });
+  assert(lean.includes('## Goal') && lean.includes('Platform Playbook'), 'lean keeps goal + playbook');
+  assert(!lean.includes('Ship Plan') && !lean.includes('Test Matrix') && !lean.includes('Honest Quality Gates') && !lean.includes('Safety & Governance'), 'lean strips optional sections');
+
+  const mega = await generate({ task: 'snake', agent: 'claude', recipe: 'one-shot-game' });
+  assert(mega.includes('Execution Loop'), 'recipe path stays mega');
+  console.log('granularity: OK');
+}
+
+async function testConsultRefine() {
+  const { consultArchitect } = require('../src/architect');
+  const draft = 'Do the thing now.';
+  const revised = `## Goal
+Build a secure authentication module.
+
+## Role & Persona
+You are a senior backend engineer with deep auth expertise.
+
+## Context & Constraints
+- Use OAuth2 with refresh tokens
+- Never store secrets in code
+- Support device flow for CLI clients
+
+## Objective
+1. Design the token lifecycle
+2. Implement refresh rotation
+3. Add integration tests
+
+## Output Format
+Markdown with clear sections.
+
+## Verification
+- npm test must pass
+- cite file:line for every change
+
+## Platform Notes
+You are on Cursor: run tests after changes and reference concrete files.`;
+  let calls = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    calls++;
+    const content = calls === 1 ? `\`\`\`markdown\n${draft}\n\`\`\`` : `\`\`\`markdown\n${revised}\n\`\`\``;
+    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
+  };
+  try {
+    const result = await consultArchitect({ task: 'build auth module', agent: 'cursor', model: 'm', apiKey: 'k', apiBase: 'https://api.test/v1', memory: false, refine: true, refineThreshold: 70 });
+    assert.strictEqual(result.refined, true, 'refine ran when draft scored low');
+    assert.strictEqual(result.prompt, revised, 'improved revision replaces draft');
+    assert.strictEqual(calls, 2, 'exactly one revision call');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    const content = `\`\`\`markdown\n${revised}\n\`\`\``;
+    return { ok: true, json: async () => ({ choices: [{ message: { content } }] }) };
+  };
+  try {
+    const good = await consultArchitect({ task: 'build auth module', agent: 'cursor', model: 'm', apiKey: 'k', apiBase: 'https://api.test/v1', memory: false, refine: true, refineThreshold: 60 });
+    assert.strictEqual(good.refined, false, 'no refine when draft already scores well');
+    assert.strictEqual(calls, 1, 'single call when good');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+  console.log('consult refine: OK');
+}
+
 async function testGoldenRegression() {
   const { runGoldenTests } = require('./golden');
   const results = await runGoldenTests({ update: process.env.GOLDEN_UPDATE === '1' });
@@ -967,7 +1051,7 @@ async function testGroundingLoop() {
   const scan = scanProject(dir);
   assert(scan.commands.includes('npm test') && scan.commands.includes('npm run lint'), 'scanProject attaches commands');
 
-  const prompt = await generate({ agent: 'cursor', task: 'fix the parser bug', projectScan: scan });
+  const prompt = await generate({ agent: 'cursor', task: 'fix the parser bug', granularity: 'task', projectScan: scan });
   assert(prompt.includes('Project Grounding'), 'template prompt has grounding section');
   assert(prompt.includes('npm test'), 'grounding includes real verify command');
   assert(prompt.includes('Execution Loop'), 'template prompt has loop contract');
@@ -977,12 +1061,12 @@ async function testGroundingLoop() {
   const recipePrompt = await generate({ agent: 'claude', task: 'snake game', recipe: 'one-shot-game', projectScan: scan });
   assert(recipePrompt.includes('Project Grounding') && recipePrompt.includes('Execution Loop'), 'recipe path gets grounding + loop');
 
-  const chatPrompt = await generate({ agent: 'deepseek', task: 'explain X', projectScan: scan });
+  const chatPrompt = await generate({ agent: 'deepseek', task: 'explain X', granularity: 'task', projectScan: scan });
   assert(chatPrompt.includes('**SELF-VERIFY**'), 'terminal-less agent gets self-verify phase');
 
   const bare = await generate({ agent: 'cursor', task: 'fix bug' });
   assert(!bare.includes('Project Grounding'), 'no grounding without a scan');
-  assert(bare.includes('Execution Loop'), 'loop contract always present');
+  assert(bare.includes('Loop: PLAN'), 'micro keeps one-line loop contract');
   fs.rmSync(dir, { recursive: true, force: true });
   console.log('grounding + loop: OK');
 }
@@ -1026,6 +1110,8 @@ async function main() {
   await testScaffold();
   await testMemory();
   await testPackTextImport();
+  await testGranularity();
+  await testConsultRefine();
   await testGoldenRegression();
   console.log('All tests passed.');
 }

@@ -56,11 +56,32 @@ Local models work too — Ollama: `OPENAI_BASE_URL=http://localhost:11434/v1`
 
 ## Your first prompt (template mode)
 
-Fast, offline, deterministic. No LLM involved.
+Fast, offline, deterministic. No LLM involved. Prompts are **goal-first** —
+they open with `## Goal` and your task, then context, playbook, grounding,
+and the execution loop.
 
 ```bash
 node src/cli.js --agent cursor --domain security --task "Review API key handling"
 ```
+
+### Task granularity — how big should the prompt be?
+
+| Granularity | What you get | When |
+|---|---|---|
+| `micro` | Goal + context + grounding + one-line loop. No playbook, no boilerplate | Small, single-goal tasks (<14 words auto-detected) |
+| `task` | Full template: playbook, grounding, loop, honest gates (+ ship/test for builds, safety/compliance for security) | The default for normal tasks |
+| `mega` | Recipe contract (playbook + grounding + loop + sections appended) | Any recipe / chain |
+
+```bash
+node src/cli.js --agent cursor --task "fix login bug"                      # auto → micro
+node src/cli.js --agent cursor --task "fix login bug" --granularity task   # force full template
+node src/cli.js --agent cursor --task "harden the API" --lean              # goal-only, no boilerplate
+```
+
+The web UI has a "Task scope" selector (Auto / Micro / Task / Mega) and a
+Lean toggle. Lean keeps Goal, Context, Playbook, Grounding, and the loop —
+nothing else — which is the right shape when you share a project folder and
+want zero filler.
 
 Useful modifiers:
 
@@ -167,12 +188,18 @@ node src/cli.js --consult --no-memory --agent cursor --task "fresh idea"
 
 If the LLM call fails, consult falls back to template mode automatically.
 
-**History-as-memory:** consult automatically retrieves up to 3 similar past
-prompts from your history (preferring human-edited, higher-scored ones) and
-feeds them to the Architect as few-shot examples, so it reuses what already
-worked for similar tasks. The web UI output pane is editable — edit the
-prompt, then copy/export; edits are recorded and prioritized as memory next
-time.
+**History-as-memory:** consult automatically retrieves up to 3 similar
+past prompts from your history (preferring human-edited, higher-scored ones)
+and feeds them to the Architect as few-shot examples, so it reuses what
+already worked for similar tasks. The web UI output pane is editable — edit
+the prompt, then copy/export; edits are recorded and prioritized as memory
+next time.
+
+**Self-refining:** after drafting, consult scores its own output against the
+rubric and issues one targeted revision pass when the score is below
+threshold (default 70) — so you get generation *and* a quality check within
+the guided request. The UI marks refined prompts (`· refined`) and shows the
+final score chip. Disable with `--no-refine`.
 
 ## Reasoning effort
 

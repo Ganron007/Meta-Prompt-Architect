@@ -23,6 +23,8 @@ async function generate(config) {
     pluginEnhancers = {},
     enhanceWith = [],
     projectScan = null,
+    granularity = 'auto',
+    lean = false,
     model,
     apiKey,
     apiBase,
@@ -55,16 +57,19 @@ async function generate(config) {
   const t = getStrings(lang);
   const grounding = buildGrounding(projectScan, t);
   const loop = buildLoopContract(agent, projectScan, t, pluginPlatforms);
-  const honest = buildHonestGates(t);
 
   const recipeObj = recipe ? getRecipe(recipe, customRecipes) : null;
   const category = recipeObj ? recipeObj.category : null;
   const isSec = securityContext(domain, category);
   const isBuild = BUILD_CATEGORIES.has(category) || domain === 'lab-build';
-  const ship = isBuild ? buildShipPlan(projectScan, t) : '';
-  const matrix = isBuild ? buildTestMatrix(projectScan, t) : '';
-  const safety = isSec ? buildSafetyClause(t) : '';
-  const compliance = isSec ? buildCompliance(domain, category, t) : '';
+  const ship = isBuild && !lean ? buildShipPlan(projectScan, t) : '';
+  const matrix = isBuild && !lean ? buildTestMatrix(projectScan, t) : '';
+  const safety = isSec && !lean ? buildSafetyClause(t) : '';
+  const compliance = isSec && !lean ? buildCompliance(domain, category, t) : '';
+  const honest = lean ? '' : buildHonestGates(t);
+
+  const granularityMode = resolveGranularity({ granularity, task: enhancedTask, recipe: recipeObj });
+  const isMicro = !recipeObj && granularityMode === 'micro';
 
   if (recipeObj) {
     const rendered = renderRecipe(recipe, {
@@ -79,13 +84,29 @@ async function generate(config) {
   const agentProfile = templates.agentProfiles[agent] || templates.agentProfiles.generic;
   const domainProfile = templates.domainProfiles[domain] || templates.domainProfiles.general;
 
-  const role = t.roleLine(agentProfile.title, domainProfile.label);
-  const objective = buildObjective(enhancedTask, outputFormat, includeExamples, t);
   const outputSpec = t.outputSpecs[outputFormat] || t.outputSpecs.markdown;
-  const inputs = buildInputs(enhancedContext, enhancedTask, t);
   const rules = buildRules(enhancedConstraints, agentProfile, tone, t);
 
-  const prompt = [`# ${role}`,
+  if (isMicro) {
+    const micro = [`# ${agentProfile.title} — ${domainProfile.label}`,
+`${t.goalHeading}
+${enhancedTask}`,
+`${t.contextHeading}
+${domainProfile.context}
+${enhancedContext ? '\n' + enhancedContext : ''}
+${rules}`,
+grounding,
+t.loopMicro,
+`${t.outputHeading}
+${outputSpec}`
+    ];
+    return micro.filter(Boolean).join('\n\n').trim();
+  }
+
+  const prompt = [`# ${agentProfile.title} — ${domainProfile.label}`,
+
+`${t.goalHeading}
+${enhancedTask}`,
 
 `${t.contextHeading}
 ${domainProfile.context}
@@ -108,12 +129,6 @@ safety,
 
 compliance,
 
-`${t.inputsHeading}
-${inputs}`,
-
-`${t.objectiveHeading}
-${objective}`,
-
 `${t.outputHeading}
 ${outputSpec}`,
 
@@ -124,6 +139,14 @@ ${t.initBody}`
   ];
 
   return prompt.filter(Boolean).join('\n\n').trim();
+}
+
+function resolveGranularity({ granularity, task, recipe }) {
+  if (recipe) return 'mega';
+  const choice = String(granularity || 'auto').toLowerCase();
+  if (['micro', 'task', 'mega'].includes(choice)) return choice;
+  const words = String(task || '').trim().split(/\s+/).filter(Boolean).length;
+  return words < 14 ? 'micro' : 'task';
 }
 
 function buildGrounding(scan, t) {

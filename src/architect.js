@@ -92,6 +92,13 @@ function unwrapPrompt(text) {
   return text.slice(start).trim();
 }
 
+const REVISE_SYSTEM = `You are a prompt-quality editor. You will be given a draft prompt, its rubric scores, and the original user request.
+Rewrite ONLY the draft prompt to fix its weakest rubric dimensions. Rules:
+- Keep the user's intent, task, constraints, and every concrete detail intact.
+- Do not add generic filler, extra sections, or instructions the user did not ask for.
+- Make the goal unmistakable, the inputs concrete, and verification actionable.
+- Output only the revised prompt. No commentary, no code fences.`;
+
 async function consultArchitect(config) {
   const projectScan = config.pluginScanner && typeof config.pluginScanner.scan === 'function'
     ? config.pluginScanner.scan(config.project || process.cwd())
@@ -102,29 +109,54 @@ async function consultArchitect(config) {
     { role: 'user', content: buildArchitectRequest(config, projectScan) }
   ];
 
+  const callOpts = { fallbackModel: config.fallbackModel, reasoning: config.reasoning };
   const raw = config.onToken
-    ? await callLLMStream(
-      config.model,
-      config.apiKey,
-      config.apiBase,
-      messages,
-      0.35,
-      { fallbackModel: config.fallbackModel, reasoning: config.reasoning, onToken: config.onToken }
-    )
-    : await callLLM(
-      config.model,
-      config.apiKey,
-      config.apiBase,
-      messages,
-      0.35,
-      { fallbackModel: config.fallbackModel, reasoning: config.reasoning }
-    );
+    ? await callLLMStream(config.model, config.apiKey, config.apiBase, messages, 0.35, { ...callOpts, onToken: config.onToken })
+    : await callLLM(config.model, config.apiKey, config.apiBase, messages, 0.35, callOpts);
+
+  const prompt = unwrapPrompt(raw);
+  let score = null;
+  let refined = false;
+
+  if (!config.onToken && config.refine !== false) {
+    const { scorePrompt } = require('./scorer');
+    const draftScore = scorePrompt(prompt, { agent: config.agent });
+    const threshold = config.refineThreshold ?? 70;
+    if (draftScore.percent < threshold) {
+      const weak = draftScore.dimensions
+        .slice()
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 3)
+        .map(d => `${d.label}: ${d.score}/${d.max} — ${(d.findings || []).slice(0, 2).join('; ')}`)
+        .join('\n');
+      const reviseMessages = [
+        { role: 'system', content: REVISE_SYSTEM },
+        { role: 'user', content: `Original request:\n${config.task}\n\nDraft prompt:\n---\n${prompt}\n---\n\nRubric scores:\n${draftScore.dimensions.map(d => `${d.label}: ${d.score}/${d.max}`).join('\n')}\n\nWeakest dimensions:\n${weak}\n\nRevise the prompt now.` }
+      ];
+      try {
+        const revised = unwrapPrompt(await callLLM(config.model, config.apiKey, config.apiBase, reviseMessages, 0.2, callOpts));
+        const revisedScore = scorePrompt(revised, { agent: config.agent });
+        if (revisedScore.percent > draftScore.percent) {
+          refined = true;
+          score = revisedScore;
+          return { prompt: revised, raw, scanned: scannedSummary(projectScan, config), score, refined };
+        }
+      } catch { /* refinement is best-effort */ }
+      score = draftScore;
+    }
+  }
 
   return {
-    prompt: unwrapPrompt(raw),
+    prompt,
     raw,
-    scanned: projectScan ? { root: projectScan.root || config.project || null, files: projectScan.files ? Object.keys(projectScan.files) : [], branch: projectScan.git && projectScan.git.branch } : null
+    scanned: scannedSummary(projectScan, config),
+    score,
+    refined
   };
 }
 
-module.exports = { consultArchitect, ARCHITECT_SYSTEM, unwrapPrompt };
+function scannedSummary(projectScan, config) {
+  return projectScan ? { root: projectScan.root || config.project || null, files: projectScan.files ? Object.keys(projectScan.files) : [], branch: projectScan.git && projectScan.git.branch } : null;
+}
+
+module.exports = { consultArchitect, ARCHITECT_SYSTEM, unwrapPrompt, REVISE_SYSTEM };

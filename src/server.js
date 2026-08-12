@@ -51,10 +51,10 @@ app.post('/api/generate', async (req, res) => {
     if (cfg.consult) {
       resolveLLM(cfg);
       const result = await consultArchitect(cfg);
-      const score = scorePrompt(result.prompt, { agent: cfg.agent });
+      const score = result.score || scorePrompt(result.prompt, { agent: cfg.agent });
       recordEvent('generate', { agent: cfg.agent, mode: 'consult', domain: cfg.domain, recipe: cfg.recipe || null, scorePercent: score.percent });
-      addHistoryEntry({ agent: cfg.agent, mode: 'consult', prompt: result.prompt, task: cfg.task, context: cfg.context, constraints: cfg.constraints, domain: cfg.domain, outputFormat: cfg.outputFormat, tone: cfg.tone, lang: cfg.lang, includeExamples: cfg.includeExamples, recipe: cfg.recipe, variables: cfg.variables, consult: true, rewrite: cfg.rewrite });
-      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score });
+      addHistoryEntry({ agent: cfg.agent, mode: 'consult', prompt: result.prompt, task: cfg.task, context: cfg.context, constraints: cfg.constraints, domain: cfg.domain, outputFormat: cfg.outputFormat, tone: cfg.tone, lang: cfg.lang, includeExamples: cfg.includeExamples, recipe: cfg.recipe, variables: cfg.variables, consult: true, rewrite: cfg.rewrite, scorePercent: score.percent });
+      return res.json({ prompt: result.prompt, mode: 'consult', scanned: result.scanned, score, refined: !!result.refined });
     }
     const prompt = await generate(cfg);
     const score = scorePrompt(prompt, { agent: cfg.agent });

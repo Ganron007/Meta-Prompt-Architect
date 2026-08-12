@@ -10,12 +10,14 @@ Generate a prompt.
 
 **Body:** generation config — `task` (required), `agent`, `domain`, `context`,
 `constraints`, `outputFormat`, `tone`, `lang`, `includeExamples`, `recipe`,
-`chain` (id list or `@preset`), `variables`, `consult`, `rewrite`, `model`,
-`apiKey`, `apiBase`, `reasoning`, `project`, `noProject`, `enhanceWith`.
+`chain` (id list or `@preset`), `granularity` (`auto|micro|task|mega`),
+`lean` (boolean), `variables`, `consult`, `rewrite`, `model`, `apiKey`,
+`apiBase`, `reasoning`, `project`, `noProject`, `enhanceWith`.
 
 When `chain` is set, the response is `{ "prompt": "<all steps joined>",
 "mode": "chain", "chain": [{ "id", "label", "position" }] }` and `recipe` is
-ignored.
+ignored. Consult responses include `score` and `refined` (true when the
+score-gated revision loop improved the draft).
 
 **Response:**
 

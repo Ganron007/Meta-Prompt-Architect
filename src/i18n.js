@@ -3,6 +3,7 @@ const SUPPORTED_LANGS = ['en', 'es', 'ja', 'zh'];
 const STRINGS = {
   en: {
     roleLine: (title, label) => `Role: ${title} specializing in ${label}`,
+    goalHeading: '## Goal',
     contextHeading: '## Context & Constraints',
     inputsHeading: '## Inputs',
     objectiveHeading: '## Objective',
@@ -37,6 +38,7 @@ const STRINGS = {
     loopSelfVerify: '3. **SELF-VERIFY** — you have no terminal access: re-read your output against the requirements and fix gaps before finalizing.',
     loopIterate: '4. **ITERATE** — if verification fails, diagnose and fix (max 5 loops); never declare success while checks are failing.',
     loopReport: '5. **REPORT** — summarize what changed and cite verification evidence (commands run, results observed).',
+    loopMicro: 'Loop: PLAN → ACT → VERIFY → ITERATE (max 5) → REPORT — run the project checks before finishing.',
     shipHeading: '## Ship Plan (build / test / deploy)',
     shipTauri: 'Build: `npm run build` for the web target and `npm run tauri build` for portable desktop bundles; run unit + e2e suites before bundling.',
     shipDotnet: 'Build: `dotnet build`; release via `dotnet publish -c Release --self-contained true` for the target runtime.',
@@ -80,6 +82,7 @@ const STRINGS = {
 
   es: {
     roleLine: (title, label) => `Rol: ${title} especializado en ${label}`,
+    goalHeading: '## Objetivo',
     contextHeading: '## Contexto y restricciones',
     inputsHeading: '## Entradas',
     objectiveHeading: '## Objetivo',
@@ -114,6 +117,7 @@ const STRINGS = {
     loopSelfVerify: '3. **AUTOVERIFICA** — no tienes terminal: relee tu salida contra los requisitos y corrige las carencias antes de finalizar.',
     loopIterate: '4. **ITERA** — si la verificación falla, diagnostica y corrige (máx. 5 ciclos); nunca declares éxito con comprobaciones fallidas.',
     loopReport: '5. **INFORMA** — resume los cambios y cita la evidencia de verificación (comandos ejecutados, resultados observados).',
+    loopMicro: 'Bucle: PLANIFICA → ACTÚA → VERIFICA → ITERA (máx. 5) → INFORMA — ejecuta las comprobaciones del proyecto antes de terminar.',
     shipHeading: '## Plan de entrega (build / test / deploy)',
     shipTauri: 'Build: `npm run build` para web y `npm run tauri build` para paquetes de escritorio portables; ejecuta suites unitarias + e2e antes de empaquetar.',
     shipDotnet: 'Build: `dotnet build`; publica con `dotnet publish -c Release --self-contained true` para el runtime objetivo.',
@@ -157,6 +161,7 @@ const STRINGS = {
 
   ja: {
     roleLine: (title, label) => `ロール: ${label}の専門家である${title}`,
+    goalHeading: '## ゴール',
     contextHeading: '## コンテキストと制約',
     inputsHeading: '## 入力',
     objectiveHeading: '## 目的',
@@ -191,6 +196,7 @@ const STRINGS = {
     loopSelfVerify: '3. **SELF-VERIFY** — ターミナルがないため、出力を要件と照合し、不足を修正してから確定する。',
     loopIterate: '4. **ITERATE** — 検証が失敗したら診断して修正する（最大5回）。チェックが失敗したまま成功と宣言しない。',
     loopReport: '5. **REPORT** — 変更内容を要約し、検証の根拠（実行コマンドと結果）を示す。',
+    loopMicro: 'ループ: PLAN → ACT → VERIFY → ITERATE（最大5回）→ REPORT — 終了前にプロジェクトのチェックを実行する。',
     shipHeading: '## 出荷計画（ビルド / テスト / デプロイ）',
     shipTauri: 'ビルド: Web は `npm run build`、ポータブル桌面版は `npm run tauri build`。バンドル前に単体 + e2e スイートを実行。',
     shipDotnet: 'ビルド: `dotnet build`。リリースは対象ランタイムに `dotnet publish -c Release --self-contained true`。',
@@ -234,6 +240,7 @@ const STRINGS = {
 
   zh: {
     roleLine: (title, label) => `角色：${title}，专注于${label}`,
+    goalHeading: '## 目标',
     contextHeading: '## 背景与约束',
     inputsHeading: '## 输入',
     objectiveHeading: '## 目标',
@@ -268,6 +275,7 @@ const STRINGS = {
     loopSelfVerify: '3. **SELF-VERIFY** — 你没有终端权限：根据需求复查输出，修正缺漏后再定稿。',
     loopIterate: '4. **ITERATE** — 若验证失败，诊断并修复（最多 5 次循环）；检查未通过时不得宣称成功。',
     loopReport: '5. **REPORT** — 总结所做更改，并引用验证证据（运行的命令及观察到的结果）。',
+    loopMicro: '循环：PLAN → ACT → VERIFY → ITERATE（最多 5 次）→ REPORT — 完成前运行项目检查。',
     shipHeading: '## 交付计划（构建 / 测试 / 部署）',
     shipTauri: '构建：Web 用 `npm run build`，便携桌面包用 `npm run tauri build`；打包前运行单元 + e2e 套件。',
     shipDotnet: '构建：`dotnet build`；面向目标运行时用 `dotnet publish -c Release --self-contained true` 发布。',

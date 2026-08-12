@@ -218,6 +218,24 @@
                 </div>
               </div>
             </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="granularity">Task scope</label>
+                <div class="select-wrap">
+                  <select id="granularity">
+                    <option value="auto">Auto (by task size)</option>
+                    <option value="micro">Micro — single goal, lean</option>
+                    <option value="task">Task — full template</option>
+                    <option value="mega">Mega — recipe contract</option>
+                  </select>
+                </div>
+              </div>
+              <label class="switch lean-switch">
+                <input type="checkbox" id="lean" />
+                <span class="slider"></span>
+                <span class="switch-label">Lean — goal only, no boilerplate</span>
+              </label>
+            </div>
             <label class="switch">
               <input type="checkbox" id="includeExamples" />
               <span class="slider"></span>

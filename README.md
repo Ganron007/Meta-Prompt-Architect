@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-2.0.0-ffb224?style=flat-square" alt="version"/>
   <img src="https://img.shields.io/badge/node-%3E%3D18-3ad9b5?style=flat-square" alt="node"/>
-  <img src="https://img.shields.io/badge/tests-45_passing-3ad9b5?style=flat-square" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-47_passing-3ad9b5?style=flat-square" alt="tests"/>
   <img src="https://img.shields.io/badge/recipes-121-ffb224?style=flat-square" alt="recipes"/>
   <img src="https://img.shields.io/badge/license-MIT-8fa89a?style=flat-square" alt="license"/>
 </p>
@@ -43,6 +43,9 @@ Generate platform-aware, context-grounded prompts for **Cursor**, **Claude Code*
 | **Repo Scaffold** | `--scaffold` writes a stack-aware skeleton (GitHub Actions CI, Makefile, `.env.example`) for the detected stack |
 | **121 One-Shot Recipes** | Proven mega-prompts across software build, cybersecurity, DFIR, reverse engineering, malware analysis, AI security, red team, blue team, cloud, appsec, OSINT, cryptography, AI/agentic frameworks — plus 10 project blueprints for building, testing, and deploying complete tools and labs |
 | **Consult Mode** | LLM-authored prompts grounded in your actual project files via structured meta-prompt; `--stream` for token-by-token output |
+| **Consult Refine Loop** | After drafting, the prompt is scored against a 6-dimension rubric and revised once when it scores below threshold — generation *and* quality check in one guided request |
+| **Task Granularity** | `auto`/`micro`/`task`/`mega` — micro = single goal, lean, no boilerplate; task = full template; mega = recipe contract. Auto picks by task size |
+| **Lean Mode** | `--lean` strips ship/test/safety/compliance/honest-gate sections — just Goal, Context, Grounding, Loop. Goal-first structure by default |
 | **Quality Scoring** | 6-dimension rubric (specificity, structure, constraints, platform utilization, completeness, actionability) via `--score`, in the web UI header, and in `--json` |
 | **Prompt Testing** | `--test` runs the prompt against an LLM and evaluates the response — format compliance, `--expect` criteria, LLM-as-judge scores |
 | **Custom Recipe Builder** | Define reusable prompt patterns with custom placeholders via `--create-recipe` or the web UI wizard; saved to `.mpa/recipes/` and validated on load |
@@ -148,6 +151,9 @@ The **Security Research** recipes implement a full 8-phase-gate methodology (G0�
 | `--rewrite` | Polish raw input via rules or LLM |
 | `--consult` | LLM authors the prompt with project grounding (`--stream` for live tokens) |
 | `--no-memory` | Disable history-as-memory few-shot in consult mode |
+| `--no-refine` | Disable the score-gated revision loop in consult mode |
+| `--granularity` | `auto` (default) \| `micro` \| `task` \| `mega` — controls prompt scope |
+| `--lean` | Strip optional sections — straight goal/task prompt with no boilerplate |
 | `--scan` | Print the scanned project context and exit |
 | `--scaffold` | Write a stack-aware repo skeleton (CI workflow, Makefile, `.env.example`) to `--out/scaffold` |
 | `--recipe` | Use a one-shot recipe |

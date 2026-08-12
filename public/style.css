@@ -605,6 +605,8 @@ select:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px c
 
 .pack-row { display: flex; gap: 12px; margin-top: 5px; }
 
+.lean-switch { align-self: flex-end; margin-bottom: 4px; }
+
 .recipe-variables {
   display: flex;
   flex-direction: column;

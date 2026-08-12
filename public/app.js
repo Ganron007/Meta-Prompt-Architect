@@ -30,6 +30,8 @@ function getConfig() {
     rewrite: $('rewrite').checked,
     recipe: $('recipe').value || undefined,
     chain: $('chainInput').value.trim() || undefined,
+    granularity: $('granularity').value,
+    lean: $('lean').checked,
     model: $('model').value.trim(),
     apiKey: $('apiKey').value.trim(),
     apiBase: $('apiBase').value.trim(),
@@ -113,7 +115,7 @@ async function generate() {
     replayPaper();
 
     const meta = $('outputMeta');
-    meta.textContent = `${wordCount(data.prompt)} words \u00b7 ${data.mode}`;
+    meta.textContent = `${wordCount(data.prompt)} words \u00b7 ${data.mode}${data.refined ? ' \u00b7 refined' : ''}`;
     meta.classList.add('live');
 
     const chip = $('scoreChip');

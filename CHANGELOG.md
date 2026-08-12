@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Task granularity**: `--granularity auto|micro|task|mega` (and a web UI
+  Task scope selector). Micro = goal-first, one-line loop, no playbook or
+  boilerplate; task = full template; mega = recipe contract; auto picks by
+  task size (recipes force mega).
+- **Lean mode**: `--lean` (web: Lean checkbox) strips ship/test/safety/
+  compliance/honest-gate sections — straight goal/task prompt when sharing a
+  project folder.
+- **Goal-first structure**: template prompts now open with `## Goal` +
+  the task, then context/constraints, playbook, grounding, loop — no more
+  role-line + inputs + objective boilerplate. Micro prompts skip the
+  platform playbook entirely.
+- **Consult refine loop**: consult drafts, scores itself against the
+  rubric, and issues one targeted revision call when below threshold
+  (default 70; `--no-refine` disables, streaming skips refine). The better
+  revision wins; the UI marks refined prompts and shows the score chip.
 - **History-as-memory consult**: consult mode now retrieves up to 3 similar
   past prompts from your history (keyword overlap, with human-edited and
   higher-scored prompts preferred) and feeds them as few-shot context so the
