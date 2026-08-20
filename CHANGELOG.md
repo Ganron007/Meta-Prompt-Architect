@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Streaming ReferenceError**: `generateStreaming` used the abort `signal`
+  without receiving it as a parameter (crashed consult + stream forges).
+  A UI regression test now exercises the streaming forge path.
+- **Web export now exports what you see**: `/api/export` accepts the prompt
+  from the client, so edited output and chain results export exactly as
+  displayed (previously it regenerated a different prompt — and re-called
+  the LLM on consult exports).
+- **Saved recipes switch to Recipe mode**: after saving a custom recipe the
+  UI switches to the Recipe layer so the new recipe is actually usable.
+- **Chain mode shareable**: share URLs now carry the chain and restore
+  Chain mode on load.
+- Removed dead template builders (`buildInputs`, `buildObjective`).
+
 ### Added
 - **Layered web UI**: a mode selector (Freeform task / Recipe / Chain) now
   drives what is shown — Domain + task scope + lean + examples appear only in
