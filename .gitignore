@@ -12,3 +12,17 @@ internal/
 .mpa/
 .mpa-analytics.json
 
+# local-only change log (kept out of git)
+CHANGELOG.md
+
+# derived / tooling junk
+*.tsbuildinfo
+*.map
+.turbo/
+.cache/
+.pkg/
+tmp/
+temp/
+npm-debug.log*
+yarn-error.log*
+
