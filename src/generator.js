@@ -216,24 +216,6 @@ function buildCompliance(domain, recipeCategory, t) {
   return [t.complianceHeading, '', ai ? t.complianceAI : t.complianceClassic].join('\n');
 }
 
-function buildObjective(task, outputFormat, includeExamples, t) {
-  const lines = t.objectiveSteps(task || t.insertTask, outputFormat);
-  if (includeExamples) {
-    lines.push(t.objectiveExamples);
-  }
-  return lines.join('\n');
-}
-
-function buildInputs(context, task, t) {
-  const parts = [];
-  parts.push(`- ${t.taskLabel}: ${task || t.insertTask}`);
-  if (context) {
-    parts.push(`- ${t.contextLabel}: ${context}`);
-  }
-  parts.push(`- ${t.dataLabel}: ${t.insertData}`);
-  return parts.join('\n');
-}
-
 function buildRules(constraints, agentProfile, tone, t) {
   const parts = [];
   parts.push(`- ${t.toneLabel}: ${tone}.`);

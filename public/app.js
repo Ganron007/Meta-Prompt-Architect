@@ -270,13 +270,14 @@ async function exportFile() {
 
   const format = $('exportFormat').value;
   const name = 'generated-prompt';
-  const edited = $('output').textContent !== state.prompt ? true : undefined;
+  const outputText = $('output').textContent;
+  const edited = outputText !== state.prompt ? true : undefined;
 
   try {
     const res = await fetch('/api/export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ config: state.config, format, name, edited })
+      body: JSON.stringify({ config: state.config, format, name, edited, prompt: outputText })
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);
@@ -370,6 +371,7 @@ function shareUrl() {
   if (cfg.consult) params.set('k', '1');
   if (cfg.rewrite) params.set('r', '1');
   if (cfg.recipe) params.set('p', cfg.recipe);
+  if (cfg.chain) params.set('q', cfg.chain);
   const url = `${location.origin}${location.pathname}?${params.toString()}`;
   navigator.clipboard.writeText(url).then(() => {
     showToast('Shareable URL copied to clipboard.');
@@ -381,7 +383,7 @@ function shareUrl() {
 function loadFromUrl() {
   const params = new URLSearchParams(location.search);
   if (!params.toString()) return;
-  const map = { a: 'agent', d: 'domain', t: 'task', c: 'context', x: 'constraints', f: 'outputFormat', n: 'tone', p: 'recipe' };
+  const map = { a: 'agent', d: 'domain', t: 'task', c: 'context', x: 'constraints', f: 'outputFormat', n: 'tone', p: 'recipe', q: 'chainInput' };
   for (const [short, long] of Object.entries(map)) {
     const val = params.get(short);
     if (val) {
@@ -393,6 +395,7 @@ function loadFromUrl() {
   if (params.get('k') === '1') $('consult').checked = true;
   if (params.get('r') === '1') $('rewrite').checked = true;
   if (params.get('p')) setTaskMode('recipe');
+  if (params.get('q')) setTaskMode('chain');
   toggleLLMConfig();
   onRecipeChange();
   if (params.get('t')) {
@@ -790,6 +793,7 @@ async function saveRecipe() {
     showRecipePreview(data.recipe);
     await loadMeta(project);
     $('recipe').value = data.recipe.id;
+    setTaskMode('recipe');
     onRecipeChange();
     setStatus(`Saved custom recipe ${data.recipe.id}`, 'ok');
     showToast(`Saved ${data.recipe.id}.`);

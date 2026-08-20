@@ -91,7 +91,7 @@ app.post('/api/generate/stream', async (req, res) => {
 
 app.post('/api/export', async (req, res) => {
   try {
-    const { config, format, name, edited } = req.body;
+    const { config, format, name, edited, prompt: suppliedPrompt } = req.body;
     if (!config || typeof config !== 'object') {
       return res.status(400).json({ error: 'Missing or invalid "config" object' });
     }
@@ -99,12 +99,14 @@ app.post('/api/export', async (req, res) => {
       return res.status(400).json({ error: 'Missing "format"' });
     }
     const cfg = withCustomRecipes(config);
-    let prompt;
-    if (cfg.consult) {
-      resolveLLM(cfg);
-      prompt = (await consultArchitect(cfg)).prompt;
-    } else {
-      prompt = await generate(cfg);
+    let prompt = suppliedPrompt;
+    if (!prompt) {
+      if (cfg.consult) {
+        resolveLLM(cfg);
+        prompt = (await consultArchitect(cfg)).prompt;
+      } else {
+        prompt = await generate(cfg);
+      }
     }
     const result = exportPrompt(prompt, format, name, plugins.exporters);
     recordEvent('export', { format, agent: config.agent, edited: !!edited });

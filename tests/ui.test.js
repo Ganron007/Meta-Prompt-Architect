@@ -124,6 +124,44 @@ async function testUiTaskModes() {
   console.log('ui task modes: OK');
 }
 
+async function testUiStreamingForge() {
+  const html = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
+  const window = new Window({ url: 'http://127.0.0.1:3000/' });
+  window.document.write(html);
+  window.fetch = async (url) => {
+    if (String(url).startsWith('/api/meta')) {
+      return { ok: true, json: async () => ({ recipes: [], recipeCategories: {}, platforms: {}, llm: { model: 'm', apiBase: 'https://x/v1', reasoning: null } }) };
+    }
+    if (String(url).startsWith('/api/generate/stream')) {
+      const chunks = [
+        'data: {"token":"Hello"}\n\n',
+        'data: {"token":" World"}\n\n',
+        'data: {"done":true,"prompt":"Hello World","mode":"consult","scanned":null,"score":null}\n\n'
+      ];
+      return {
+        ok: true,
+        body: new ReadableStream({
+          start(controller) {
+            for (const c of chunks) controller.enqueue(new TextEncoder().encode(c));
+            controller.close();
+          }
+        })
+      };
+    }
+    return { ok: true, json: async () => ({}) };
+  };
+  window.eval(fs.readFileSync(path.join(ROOT, 'public', 'app.js'), 'utf8'));
+  await wait(80);
+  $(window, 'task').value = 'hello';
+  $(window, 'consult').checked = true;
+  $(window, 'stream').checked = true;
+  await window.generate();
+  assert($(window, 'output').textContent === 'Hello World', 'streamed prompt lands in output');
+  assert(!$(window, 'statusStrip').textContent.includes('Failed'), 'no runtime error in streaming path');
+  assert($(window, 'generateBtn').disabled === false, 'forge button re-enabled after stream');
+  console.log('ui streaming forge: OK');
+}
+
 async function main() {
   await testUiMetaAndLlm();
   await testUiLlmToggle();
@@ -132,6 +170,7 @@ async function main() {
   await testUiRecipeVariablesHidden();
   await testUiModalsHidden();
   await testUiTaskModes();
+  await testUiStreamingForge();
   console.log('All UI tests passed.');
 }
 
