@@ -191,7 +191,7 @@ $('cancelBtn').addEventListener('click', () => {
   if (state.abort) state.abort.abort();
 });
 
-async function generateStreaming(config, btn, label) {
+async function generateStreaming(config, btn, label, signal) {
   const out = $('output');
   out.textContent = '';
   out.classList.remove('placeholder');
